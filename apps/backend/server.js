@@ -193,6 +193,73 @@ app.post('/api/readings', async (req, res) => {
 });
 
 // ──────────────────────────────────────────────
+// BACKUP / RESTORE (iCloud sync support)
+// ──────────────────────────────────────────────
+app.get('/api/backup', async (_req, res) => {
+  try {
+    const tables = ['residents', 'alerts', 'tasks', 'messages', 'readings'];
+    const snapshot = {};
+    for (const table of tables) {
+      const { rows } = await db.query(`SELECT * FROM ${table} ORDER BY id`);
+      snapshot[table] = rows;
+    }
+    snapshot.exportedAt = new Date().toISOString();
+    res.json(snapshot);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/backup/restore', async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    const tables = ['readings', 'messages', 'tasks', 'alerts', 'residents'];
+
+    // Clear in reverse FK order
+    for (const table of tables) {
+      await client.query(`DELETE FROM ${table}`);
+    }
+
+    // Insert in FK order (residents first), preserving original IDs
+    const insertOrder = ['residents', 'alerts', 'tasks', 'messages', 'readings'];
+    const counts = {};
+    for (const table of insertOrder) {
+      const rows = req.body[table];
+      if (!Array.isArray(rows) || !rows.length) {
+        counts[table] = 0;
+        continue;
+      }
+      for (const row of rows) {
+        const cols = Object.keys(row);
+        const vals = cols.map((c) => {
+          const v = row[c];
+          return v !== null && typeof v === 'object' ? JSON.stringify(v) : v;
+        });
+        const placeholders = cols.map((_, i) => `$${i + 1}`);
+        await client.query(
+          `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${placeholders.join(', ')})`,
+          vals
+        );
+      }
+      counts[table] = rows.length;
+      // Reset sequence to max id
+      await client.query(
+        `SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE((SELECT MAX(id) FROM ${table}), 1))`
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ restored: true, counts, restoredAt: new Date().toISOString() });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// ──────────────────────────────────────────────
 // START
 // ──────────────────────────────────────────────
 app.listen(PORT, () => {
@@ -209,5 +276,7 @@ app.listen(PORT, () => {
   console.log(`     GET    /api/messages`);
   console.log(`     POST   /api/messages`);
   console.log(`     GET    /api/readings?residentId=:id`);
-  console.log(`     POST   /api/readings\n`);
+  console.log(`     POST   /api/readings`);
+  console.log(`     GET    /api/backup`);
+  console.log(`     POST   /api/backup/restore\n`);
 });

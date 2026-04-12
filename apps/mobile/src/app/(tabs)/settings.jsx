@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -24,6 +25,10 @@ import {
   LogOut,
   ChevronRight,
   Stethoscope,
+  Cloud,
+  CloudOff,
+  RefreshCw,
+  Download,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,6 +38,9 @@ import Avatar from '../../components/Avatar';
 import Card from '../../components/Card';
 import AnimatedPressable from '../../components/AnimatedPressable';
 import { haptic } from '../../utils/haptics';
+import { useBackupManager } from '../../hooks/useBackupManager';
+import { restoreToServer, clearBackup } from '../../services/iCloudBackup';
+import { isOnline } from '../../services/syncManager';
 
 const SETTINGS_KEY = '@careconnect_settings';
 const TIMEOUT_OPTIONS = ['5 mins', '10 mins', '15 mins', '20 mins', '30 mins'];
@@ -99,6 +107,57 @@ export default function SettingsScreen() {
   const [showProfile, setShowProfile] = useState(false);
   const [editName, setEditName] = useState(userName);
   const [editRole, setEditRole] = useState(userRole);
+  const { lastBackup, isBackingUp, runBackup } = useBackupManager();
+  const [isRestoring, setIsRestoring] = useState(false);
+
+  const handleManualBackup = useCallback(async () => {
+    haptic.medium();
+    const meta = await runBackup();
+    if (meta) {
+      Alert.alert('Backup Complete', `Saved ${Object.values(meta.tables).reduce((a, b) => a + b, 0)} records to iCloud.`);
+    } else {
+      Alert.alert('Backup Skipped', 'Check your internet connection.');
+    }
+  }, [runBackup]);
+
+  const handleRestore = useCallback(async () => {
+    Alert.alert(
+      'Restore from iCloud',
+      'This will replace all server data with the iCloud backup. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Restore',
+          style: 'destructive',
+          onPress: async () => {
+            setIsRestoring(true);
+            try {
+              const result = await restoreToServer();
+              Alert.alert('Restore Complete', `Restored ${Object.values(result.counts).reduce((a, b) => a + b, 0)} records.`);
+            } catch (err) {
+              Alert.alert('Restore Failed', err.message);
+            } finally {
+              setIsRestoring(false);
+            }
+          },
+        },
+      ],
+    );
+  }, []);
+
+  const handleClearBackup = useCallback(() => {
+    Alert.alert('Clear Backup', 'Remove the local iCloud backup cache?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: async () => {
+          await clearBackup();
+          Alert.alert('Cleared', 'Local backup cache removed.');
+        },
+      },
+    ]);
+  }, []);
 
   const handleSaveProfile = useCallback(() => {
     // Persist profile to AsyncStorage
@@ -241,6 +300,28 @@ export default function SettingsScreen() {
             label="Session Timeout"
             value={sessionTimeout}
             onPress={handleSessionTimeout}
+            last
+          />
+        </SettingsGroup>
+
+        <SettingsGroup title="iCloud Backup">
+          <SettingsItem
+            icon={isBackingUp ? <ActivityIndicator size={20} color={colors.primary} /> : <Cloud size={20} color={colors.primary} />}
+            label="Backup Now"
+            subtitle={lastBackup ? `Last: ${new Date(lastBackup.createdAt).toLocaleString()}` : 'No backup yet'}
+            onPress={handleManualBackup}
+          />
+          <SettingsItem
+            icon={isRestoring ? <ActivityIndicator size={20} color={colors.statusStable} /> : <Download size={20} color={colors.statusStable} />}
+            label="Restore from iCloud"
+            subtitle="Replace server data with backup"
+            onPress={handleRestore}
+          />
+          <SettingsItem
+            icon={<CloudOff size={20} color={colors.danger} />}
+            label="Clear Backup Cache"
+            subtitle="Remove local iCloud backup"
+            onPress={handleClearBackup}
             last
           />
         </SettingsGroup>
