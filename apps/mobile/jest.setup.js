@@ -1,7 +1,9 @@
 // Jest setup — mocks for native modules and third-party libs
 
 // Silence RN Animated warnings in tests
-jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}), {
+  virtual: true,
+});
 
 // Mock expo-secure-store
 jest.mock('expo-secure-store', () => ({
@@ -30,10 +32,7 @@ jest.mock('lucide-react-native', () => {
     Icon.displayName = name;
     return Icon;
   };
-  return new Proxy(
-    {},
-    { get: (_target, prop) => icon(String(prop)) },
-  );
+  return new Proxy({}, { get: (_target, prop) => icon(String(prop)) });
 });
 
 // Mock expo-router
@@ -75,5 +74,42 @@ jest.mock('@tanstack/react-query', () => {
     useQueryClient: jest.fn().mockReturnValue({
       invalidateQueries: jest.fn(),
     }),
+  };
+});
+
+// Mock react-native-webview (requires native TurboModule)
+jest.mock('react-native-webview', () => {
+  const { View } = require('react-native');
+  return { WebView: (props) => <View testID="webview" {...props} /> };
+});
+
+// Mock @react-native-async-storage/async-storage
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn().mockResolvedValue(null),
+  setItem: jest.fn().mockResolvedValue(undefined),
+  removeItem: jest.fn().mockResolvedValue(undefined),
+  multiGet: jest.fn().mockResolvedValue([]),
+  multiSet: jest.fn().mockResolvedValue(undefined),
+  multiRemove: jest.fn().mockResolvedValue(undefined),
+  clear: jest.fn().mockResolvedValue(undefined),
+  getAllKeys: jest.fn().mockResolvedValue([]),
+}));
+
+// Mock @gorhom/bottom-sheet
+jest.mock('@gorhom/bottom-sheet', () => {
+  const { View, Modal } = require('react-native');
+  const React = require('react');
+  return {
+    __esModule: true,
+    default: React.forwardRef(({ children }, ref) => (
+      <View ref={ref}>{children}</View>
+    )),
+    BottomSheetModal: React.forwardRef(({ children }, ref) => (
+      <View ref={ref}>{children}</View>
+    )),
+    BottomSheetModalProvider: ({ children }) => <View>{children}</View>,
+    BottomSheetBackdrop: (props) => <View {...props} />,
+    BottomSheetView: ({ children }) => <View>{children}</View>,
+    BottomSheetScrollView: ({ children }) => <View>{children}</View>,
   };
 });

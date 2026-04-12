@@ -3,9 +3,21 @@ import { View, Text } from 'react-native';
 import { colors, radius, typography } from '../theme';
 
 const STATUS_CONFIG = {
-  stable: { bg: colors.status.stable.bg, text: colors.status.stable.text, label: 'Stable' },
-  warning: { bg: colors.status.warning.bg, text: colors.status.warning.text, label: 'Warning' },
-  critical: { bg: colors.status.critical.bg, text: colors.status.critical.text, label: 'Critical' },
+  stable: {
+    bg: colors.status.stable.bg,
+    text: colors.status.stable.text,
+    label: 'Stable',
+  },
+  warning: {
+    bg: colors.status.warning.bg,
+    text: colors.status.warning.text,
+    label: 'Warning',
+  },
+  critical: {
+    bg: colors.status.critical.bg,
+    text: colors.status.critical.text,
+    label: 'Critical',
+  },
 };
 
 export default function StatusBadge({ status, size = 'md' }) {

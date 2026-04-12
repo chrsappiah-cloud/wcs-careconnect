@@ -9,7 +9,9 @@ describe('SkeletonBox', () => {
   });
 
   it('renders with custom dimensions', () => {
-    const { toJSON } = render(<SkeletonBox width={200} height={40} borderRadius={12} />);
+    const { toJSON } = render(
+      <SkeletonBox width={200} height={40} borderRadius={12} />,
+    );
     expect(toJSON()).toBeTruthy();
   });
 });

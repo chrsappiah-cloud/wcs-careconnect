@@ -106,18 +106,25 @@ describe('searchDrugs — input validation', () => {
 
 describe('searchDrugs', () => {
   it('parses RxNorm response correctly', async () => {
-    mockFetch.mockReturnValue(okJSON({
-      drugGroup: {
-        conceptGroup: [
-          {
-            tty: 'SBD',
-            conceptProperties: [
-              { rxcui: '123', name: 'Aspirin 325mg', synonym: 'ASA', tty: 'SBD' },
-            ],
-          },
-        ],
-      },
-    }));
+    mockFetch.mockReturnValue(
+      okJSON({
+        drugGroup: {
+          conceptGroup: [
+            {
+              tty: 'SBD',
+              conceptProperties: [
+                {
+                  rxcui: '123',
+                  name: 'Aspirin 325mg',
+                  synonym: 'ASA',
+                  tty: 'SBD',
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
 
     const result = await searchDrugs('aspirin');
     expect(result).toEqual([
@@ -152,15 +159,17 @@ describe('getDrugByRxcui', () => {
   });
 
   it('parses allrelated response', async () => {
-    mockFetch.mockReturnValue(okJSON({
-      allRelatedGroup: {
-        conceptGroup: [
-          { tty: 'BN', conceptProperties: [{ name: 'Bayer' }] },
-          { tty: 'IN', conceptProperties: [{ name: 'Aspirin' }] },
-          { tty: 'DF', conceptProperties: [{ name: 'Oral Tablet' }] },
-        ],
-      },
-    }));
+    mockFetch.mockReturnValue(
+      okJSON({
+        allRelatedGroup: {
+          conceptGroup: [
+            { tty: 'BN', conceptProperties: [{ name: 'Bayer' }] },
+            { tty: 'IN', conceptProperties: [{ name: 'Aspirin' }] },
+            { tty: 'DF', conceptProperties: [{ name: 'Oral Tablet' }] },
+          ],
+        },
+      }),
+    );
 
     const result = await getDrugByRxcui('1191');
     expect(result.brandNames).toContain('Bayer');
@@ -182,13 +191,17 @@ describe('checkDrugInteractions', () => {
   });
 
   it('detects interaction when label mentions other drug', async () => {
-    mockFetch.mockReturnValue(okJSON({
-      results: [
-        {
-          drug_interactions: ['Concurrent use with warfarin may increase bleeding risk.'],
-        },
-      ],
-    }));
+    mockFetch.mockReturnValue(
+      okJSON({
+        results: [
+          {
+            drug_interactions: [
+              'Concurrent use with warfarin may increase bleeding risk.',
+            ],
+          },
+        ],
+      }),
+    );
 
     const result = await checkDrugInteractions(['aspirin', 'warfarin']);
     expect(result.length).toBeGreaterThan(0);
@@ -197,9 +210,11 @@ describe('checkDrugInteractions', () => {
   });
 
   it('returns [] when no cross-mention found', async () => {
-    mockFetch.mockReturnValue(okJSON({
-      results: [{ drug_interactions: ['Take with food.'] }],
-    }));
+    mockFetch.mockReturnValue(
+      okJSON({
+        results: [{ drug_interactions: ['Take with food.'] }],
+      }),
+    );
 
     const result = await checkDrugInteractions(['aspirin', 'warfarin']);
     expect(result).toEqual([]);
@@ -212,11 +227,13 @@ describe('checkDrugInteractions', () => {
 
 describe('suggestDrugSpelling', () => {
   it('returns suggestions list', async () => {
-    mockFetch.mockReturnValue(okJSON({
-      suggestionGroup: {
-        suggestionList: { suggestion: ['aspirin', 'aspirin 325'] },
-      },
-    }));
+    mockFetch.mockReturnValue(
+      okJSON({
+        suggestionGroup: {
+          suggestionList: { suggestion: ['aspirin', 'aspirin 325'] },
+        },
+      }),
+    );
 
     const result = await suggestDrugSpelling('asprin');
     expect(result).toEqual(['aspirin', 'aspirin 325']);
@@ -237,21 +254,31 @@ describe('searchAdverseEvents', () => {
   });
 
   it('parses adverse events', async () => {
-    mockFetch.mockReturnValue(okJSON({
-      results: [{
-        safetyreportid: 'RPT1',
-        serious: '1',
-        seriousnessdeath: '0',
-        seriousnesslifethreatening: '1',
-        seriousnesshospitalization: '0',
-        seriousnessdisabling: '0',
-        patient: {
-          reaction: [{ reactionmeddrapt: 'Nausea' }],
-          drug: [{ medicinalproduct: 'Aspirin', drugindication: 'Pain', drugcharacterization: '1' }],
-        },
-        receivedate: '20240101',
-      }],
-    }));
+    mockFetch.mockReturnValue(
+      okJSON({
+        results: [
+          {
+            safetyreportid: 'RPT1',
+            serious: '1',
+            seriousnessdeath: '0',
+            seriousnesslifethreatening: '1',
+            seriousnesshospitalization: '0',
+            seriousnessdisabling: '0',
+            patient: {
+              reaction: [{ reactionmeddrapt: 'Nausea' }],
+              drug: [
+                {
+                  medicinalproduct: 'Aspirin',
+                  drugindication: 'Pain',
+                  drugcharacterization: '1',
+                },
+              ],
+            },
+            receivedate: '20240101',
+          },
+        ],
+      }),
+    );
 
     const result = await searchAdverseEvents('aspirin');
     expect(result).toHaveLength(1);
@@ -273,12 +300,14 @@ describe('topAdverseReactions', () => {
   });
 
   it('parses count data', async () => {
-    mockFetch.mockReturnValue(okJSON({
-      results: [
-        { term: 'Nausea', count: 100 },
-        { term: 'Headache', count: 50 },
-      ],
-    }));
+    mockFetch.mockReturnValue(
+      okJSON({
+        results: [
+          { term: 'Nausea', count: 100 },
+          { term: 'Headache', count: 50 },
+        ],
+      }),
+    );
 
     const result = await topAdverseReactions('aspirin');
     expect(result).toHaveLength(2);
@@ -297,11 +326,19 @@ describe('searchConditions', () => {
   });
 
   it('parses ICD-11 response when available', async () => {
-    mockFetch.mockReturnValue(okJSON({
-      destinationEntities: [
-        { id: '123', theCode: 'BA00', title: 'Hypertension', score: 0.9, chapter: '11' },
-      ],
-    }));
+    mockFetch.mockReturnValue(
+      okJSON({
+        destinationEntities: [
+          {
+            id: '123',
+            theCode: 'BA00',
+            title: 'Hypertension',
+            score: 0.9,
+            chapter: '11',
+          },
+        ],
+      }),
+    );
 
     const result = await searchConditions('hypertension');
     expect(result).toHaveLength(1);
@@ -314,13 +351,19 @@ describe('searchConditions', () => {
     // First call (ICD-11) fails
     mockFetch.mockReturnValueOnce(errorResponse(401, 'Unauthorized'));
     // Second call (SNOMED fallback via expandValueSet)
-    mockFetch.mockReturnValueOnce(okJSON({
-      expansion: {
-        contains: [
-          { code: '38341003', display: 'Hypertension', system: 'http://snomed.info/sct' },
-        ],
-      },
-    }));
+    mockFetch.mockReturnValueOnce(
+      okJSON({
+        expansion: {
+          contains: [
+            {
+              code: '38341003',
+              display: 'Hypertension',
+              system: 'http://snomed.info/sct',
+            },
+          ],
+        },
+      }),
+    );
 
     const result = await searchConditions('hypertension');
     expect(result).toHaveLength(1);
@@ -339,16 +382,20 @@ describe('searchFHIRPatients', () => {
   });
 
   it('parses FHIR Bundle', async () => {
-    mockFetch.mockReturnValue(okJSON({
-      entry: [{
-        resource: {
-          id: 'p1',
-          name: [{ given: ['John'], family: 'Smith' }],
-          gender: 'male',
-          birthDate: '1950-01-01',
-        },
-      }],
-    }));
+    mockFetch.mockReturnValue(
+      okJSON({
+        entry: [
+          {
+            resource: {
+              id: 'p1',
+              name: [{ given: ['John'], family: 'Smith' }],
+              gender: 'male',
+              birthDate: '1950-01-01',
+            },
+          },
+        ],
+      }),
+    );
 
     const result = await searchFHIRPatients('john');
     expect(result).toHaveLength(1);
@@ -388,12 +435,14 @@ describe('lookupSNOMED', () => {
   });
 
   it('parses $lookup response', async () => {
-    mockFetch.mockReturnValue(okJSON({
-      parameter: [
-        { name: 'display', valueString: "Alzheimer's disease" },
-        { name: 'name', valueString: 'SNOMED CT' },
-      ],
-    }));
+    mockFetch.mockReturnValue(
+      okJSON({
+        parameter: [
+          { name: 'display', valueString: "Alzheimer's disease" },
+          { name: 'name', valueString: 'SNOMED CT' },
+        ],
+      }),
+    );
 
     const result = await lookupSNOMED('26929004');
     expect(result.display).toBe("Alzheimer's disease");
@@ -407,13 +456,15 @@ describe('expandValueSet', () => {
   });
 
   it('parses expansion results', async () => {
-    mockFetch.mockReturnValue(okJSON({
-      expansion: {
-        contains: [
-          { code: '123', display: 'Test', system: 'http://snomed.info/sct' },
-        ],
-      },
-    }));
+    mockFetch.mockReturnValue(
+      okJSON({
+        expansion: {
+          contains: [
+            { code: '123', display: 'Test', system: 'http://snomed.info/sct' },
+          ],
+        },
+      }),
+    );
 
     const result = await expandValueSet('http://example.com/vs', 'test');
     expect(result).toHaveLength(1);
@@ -430,13 +481,19 @@ describe('searchAMTMedications', () => {
     // AMT call — empty
     mockFetch.mockReturnValueOnce(okJSON({ expansion: { contains: [] } }));
     // International SNOMED fallback
-    mockFetch.mockReturnValueOnce(okJSON({
-      expansion: {
-        contains: [
-          { code: '999', display: 'Aspirin', system: 'http://snomed.info/sct' },
-        ],
-      },
-    }));
+    mockFetch.mockReturnValueOnce(
+      okJSON({
+        expansion: {
+          contains: [
+            {
+              code: '999',
+              display: 'Aspirin',
+              system: 'http://snomed.info/sct',
+            },
+          ],
+        },
+      }),
+    );
 
     const result = await searchAMTMedications('aspirin');
     expect(result).toHaveLength(1);

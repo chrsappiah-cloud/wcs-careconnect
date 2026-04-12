@@ -8,8 +8,16 @@ function SkeletonBox({ width, height = 16, borderRadius = radius.sm, style }) {
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, {
+          toValue: 0.7,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
       ]),
     );
     animation.start();
@@ -39,7 +47,6 @@ export function SkeletonCard() {
         backgroundColor: colors.surface,
         borderRadius: radius['2xl'],
         padding: 20,
-        marginHorizontal: 20,
         marginBottom: 12,
         borderWidth: 1,
         borderColor: colors.surfaceBorder,

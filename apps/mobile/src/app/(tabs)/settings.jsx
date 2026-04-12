@@ -1,6 +1,14 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Linking } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Switch,
+  Alert,
+  Linking,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   User,
   Bell,
@@ -12,15 +20,15 @@ import {
   LogOut,
   ChevronRight,
   Stethoscope,
-} from "lucide-react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors, spacing, radius, typography, shadows } from "../../theme";
-import { useAuth } from "../../utils/auth/useAuth";
-import Avatar from "../../components/Avatar";
-import Card from "../../components/Card";
+} from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, radius, typography, shadows } from '../../theme';
+import { useAuth } from '../../utils/auth/useAuth';
+import Avatar from '../../components/Avatar';
+import Card from '../../components/Card';
 
-const SETTINGS_KEY = "@careconnect_settings";
-const TIMEOUT_OPTIONS = ["5 mins", "10 mins", "15 mins", "20 mins", "30 mins"];
+const SETTINGS_KEY = '@careconnect_settings';
+const TIMEOUT_OPTIONS = ['5 mins', '10 mins', '15 mins', '20 mins', '30 mins'];
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -28,7 +36,7 @@ export default function SettingsScreen() {
   const [pushAlerts, setPushAlerts] = useState(true);
   const [highPriorityOnly, setHighPriorityOnly] = useState(false);
   const [biometricUnlock, setBiometricUnlock] = useState(true);
-  const [sessionTimeout, setSessionTimeout] = useState("20 mins");
+  const [sessionTimeout, setSessionTimeout] = useState('20 mins');
 
   // Load persisted settings
   useEffect(() => {
@@ -37,8 +45,10 @@ export default function SettingsScreen() {
         try {
           const saved = JSON.parse(raw);
           if (saved.pushAlerts != null) setPushAlerts(saved.pushAlerts);
-          if (saved.highPriorityOnly != null) setHighPriorityOnly(saved.highPriorityOnly);
-          if (saved.biometricUnlock != null) setBiometricUnlock(saved.biometricUnlock);
+          if (saved.highPriorityOnly != null)
+            setHighPriorityOnly(saved.highPriorityOnly);
+          if (saved.biometricUnlock != null)
+            setBiometricUnlock(saved.biometricUnlock);
           if (saved.sessionTimeout) setSessionTimeout(saved.sessionTimeout);
         } catch {}
       }
@@ -48,37 +58,44 @@ export default function SettingsScreen() {
   const persistSettings = useCallback((updates) => {
     AsyncStorage.getItem(SETTINGS_KEY).then((raw) => {
       const current = raw ? JSON.parse(raw) : {};
-      AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...current, ...updates }));
+      AsyncStorage.setItem(
+        SETTINGS_KEY,
+        JSON.stringify({ ...current, ...updates }),
+      );
     });
   }, []);
 
   const handleSignOut = useCallback(() => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: () => signOut() },
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
     ]);
   }, [signOut]);
 
   const handleSessionTimeout = useCallback(() => {
     Alert.alert(
-      "Session Timeout",
-      "Select auto-lock duration:",
+      'Session Timeout',
+      'Select auto-lock duration:',
       TIMEOUT_OPTIONS.map((opt) => ({
         text: opt,
         onPress: () => {
           setSessionTimeout(opt);
           persistSettings({ sessionTimeout: opt });
         },
-      }))
+      })),
     );
   }, [persistSettings]);
 
-  const userName = auth?.user?.name || "Nurse Sarah";
-  const userRole = auth?.user?.role || "Ward A • Head Nurse";
+  const userName = auth?.user?.name || 'Nurse Sarah';
+  const userRole = auth?.user?.role || 'Ward A • Head Nurse';
 
   return (
     <View
-      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingTop: insets.top,
+      }}
     >
       {/* Header */}
       <View
@@ -90,7 +107,9 @@ export default function SettingsScreen() {
           ...shadows.sm,
         }}
       >
-        <Text style={[typography.title2, { color: colors.text }]}>Settings</Text>
+        <Text style={[typography.title2, { color: colors.text }]}>
+          Settings
+        </Text>
       </View>
 
       <ScrollView
@@ -101,13 +120,18 @@ export default function SettingsScreen() {
         {/* Profile Card */}
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => Alert.alert("Profile", `${userName}\n${userRole}\n\nProfile editing coming soon.`)}
+          onPress={() =>
+            Alert.alert(
+              'Profile',
+              `${userName}\n${userRole}\n\nProfile editing coming soon.`,
+            )
+          }
         >
           <Card variant="elevated" style={{ marginBottom: 24 }}>
             <View
               style={{
-                flexDirection: "row",
-                alignItems: "center",
+                flexDirection: 'row',
+                alignItems: 'center',
               }}
             >
               <Avatar name={userName} size={56} />
@@ -117,8 +141,8 @@ export default function SettingsScreen() {
                 </Text>
                 <View
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
+                    flexDirection: 'row',
+                    alignItems: 'center',
                     gap: 6,
                     marginTop: 2,
                   }}
@@ -186,12 +210,12 @@ export default function SettingsScreen() {
           <SettingsItem
             icon={<HelpCircle size={20} color={colors.textSecondary} />}
             label="Help Center"
-            onPress={() => Linking.openURL("https://careconnect.help")}
+            onPress={() => Linking.openURL('https://careconnect.help')}
           />
           <SettingsItem
             icon={<Headphones size={20} color={colors.textSecondary} />}
             label="Device Support"
-            onPress={() => Linking.openURL("mailto:support@careconnect.com")}
+            onPress={() => Linking.openURL('mailto:support@careconnect.com')}
             last
           />
         </SettingsGroup>
@@ -201,7 +225,7 @@ export default function SettingsScreen() {
           style={{
             fontSize: 12,
             color: colors.textMuted,
-            textAlign: "center",
+            textAlign: 'center',
             marginBottom: 16,
           }}
         >
@@ -213,12 +237,12 @@ export default function SettingsScreen() {
           activeOpacity={0.7}
           onPress={handleSignOut}
           style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
             padding: 14,
             marginBottom: 20,
-            backgroundColor: "#FEF2F2",
+            backgroundColor: '#FEF2F2',
             borderRadius: radius.lg,
           }}
         >
@@ -226,7 +250,7 @@ export default function SettingsScreen() {
           <Text
             style={{
               fontSize: 15,
-              fontWeight: "600",
+              fontWeight: '600',
               color: colors.statusCritical,
               marginLeft: 8,
             }}
@@ -245,9 +269,9 @@ function SettingsGroup({ title, children }) {
       <Text
         style={{
           fontSize: 13,
-          fontWeight: "600",
+          fontWeight: '600',
           color: colors.textTertiary,
-          textTransform: "uppercase",
+          textTransform: 'uppercase',
           letterSpacing: 0.5,
           marginBottom: 8,
           marginLeft: 4,
@@ -259,7 +283,7 @@ function SettingsGroup({ title, children }) {
         style={{
           backgroundColor: colors.surface,
           borderRadius: radius.xl,
-          overflow: "hidden",
+          overflow: 'hidden',
           borderWidth: 1,
           borderColor: colors.surfaceBorder,
           ...shadows.sm,
@@ -271,15 +295,24 @@ function SettingsGroup({ title, children }) {
   );
 }
 
-function SettingsItem({ icon, label, subtitle, type, value, onValueChange, onPress, last }) {
+function SettingsItem({
+  icon,
+  label,
+  subtitle,
+  type,
+  value,
+  onValueChange,
+  onPress,
+  last,
+}) {
   return (
     <TouchableOpacity
       activeOpacity={0.6}
-      onPress={type !== "switch" ? onPress : undefined}
-      disabled={type === "switch" && !onPress}
+      onPress={type !== 'switch' ? onPress : undefined}
+      disabled={type === 'switch' && !onPress}
       style={{
-        flexDirection: "row",
-        alignItems: "center",
+        flexDirection: 'row',
+        alignItems: 'center',
         paddingVertical: 14,
         paddingHorizontal: 16,
         borderBottomWidth: last ? 0 : 1,
@@ -292,23 +325,25 @@ function SettingsItem({ icon, label, subtitle, type, value, onValueChange, onPre
           height: 36,
           borderRadius: 10,
           backgroundColor: colors.surfaceSecondary,
-          alignItems: "center",
-          justifyContent: "center",
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
         {icon}
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
-        <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text }}>
+        <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>
           {label}
         </Text>
         {subtitle && (
-          <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 1 }}>
+          <Text
+            style={{ fontSize: 13, color: colors.textTertiary, marginTop: 1 }}
+          >
             {subtitle}
           </Text>
         )}
       </View>
-      {type === "switch" ? (
+      {type === 'switch' ? (
         <Switch
           value={value}
           onValueChange={onValueChange}

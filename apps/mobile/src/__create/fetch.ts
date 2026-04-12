@@ -26,7 +26,8 @@ const isFileURL = (url: string) => {
 const isFirstPartyURL = (url: string) => {
   return (
     url.startsWith('/') ||
-    (process.env.EXPO_PUBLIC_BASE_URL && url.startsWith(process.env.EXPO_PUBLIC_BASE_URL))
+    (process.env.EXPO_PUBLIC_BASE_URL &&
+      url.startsWith(process.env.EXPO_PUBLIC_BASE_URL))
   );
 };
 

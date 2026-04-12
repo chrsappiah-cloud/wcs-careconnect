@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-} from "react-native";
-import { useQuery } from "@tanstack/react-query";
+} from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
   Plus,
@@ -18,15 +18,15 @@ import {
   ShieldCheck,
   Info,
   Pill,
-} from "lucide-react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors, radius, shadows, spacing, typography } from "../../theme";
-import Card from "../../components/Card";
-import EmptyState from "../../components/EmptyState";
+} from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, radius, shadows, typography } from '../../theme';
+import Card from '../../components/Card';
+import EmptyState from '../../components/EmptyState';
 import {
   checkDrugInteractions,
   COMMON_MEDICATIONS,
-} from "../../services/auMedApi";
+} from '../../services/auMedApi';
 
 const SEVERITY_STYLES = {
   high: {
@@ -34,19 +34,19 @@ const SEVERITY_STYLES = {
     color: colors.dangerDark,
     icon: ShieldAlert,
     border: colors.danger,
-    label: "High Risk",
+    label: 'High Risk',
   },
   N_A: {
     bg: colors.warningLight,
     color: colors.warningDark,
     icon: Shield,
     border: colors.warning,
-    label: "Check Required",
+    label: 'Check Required',
   },
 };
 
 function getSeverityStyle(severity) {
-  const key = severity?.toLowerCase?.() === "high" ? "high" : "N_A";
+  const key = severity?.toLowerCase?.() === 'high' ? 'high' : 'N_A';
   return SEVERITY_STYLES[key] || SEVERITY_STYLES.N_A;
 }
 
@@ -62,7 +62,7 @@ export default function InteractionsScreen() {
     isFetching: checking,
     refetch,
   } = useQuery({
-    queryKey: ["interactions", drugNames.sort().join(",")],
+    queryKey: ['interactions', drugNames.sort().join(',')],
     queryFn: () => checkDrugInteractions(drugNames),
     enabled: drugNames.length >= 2,
     staleTime: 300000,
@@ -74,7 +74,7 @@ export default function InteractionsScreen() {
       setSelectedMeds((prev) => [...prev, med]);
       setShowPicker(false);
     },
-    [selectedMeds]
+    [selectedMeds],
   );
 
   const removeMed = useCallback((rxcui) => {
@@ -87,35 +87,60 @@ export default function InteractionsScreen() {
 
   return (
     <View
-      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingTop: insets.top,
+      }}
     >
       {/* Header */}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
         <Text style={[typography.largeTitle, { color: colors.text }]}>
           Interactions
         </Text>
-        <Text style={[typography.footnote, { color: colors.textTertiary, marginTop: 2 }]}>
+        <Text
+          style={[
+            typography.footnote,
+            { color: colors.textTertiary, marginTop: 2 },
+          ]}
+        >
           Check drug-drug interactions via OpenFDA labels
         </Text>
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120, paddingTop: 12 }}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingBottom: 120,
+          paddingTop: 12,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {/* Selected medications */}
-        <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: 8 }]}>
+        <Text
+          style={[
+            typography.caption,
+            { color: colors.textTertiary, marginBottom: 8 },
+          ]}
+        >
           SELECTED MEDICATIONS ({selectedMeds.length})
         </Text>
 
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginBottom: 12,
+          }}
+        >
           {selectedMeds.map((med) => (
             <View
               key={med.rxcui}
               style={{
-                flexDirection: "row",
-                alignItems: "center",
+                flexDirection: 'row',
+                alignItems: 'center',
                 backgroundColor: colors.primaryLight,
                 borderRadius: radius.full,
                 paddingLeft: 14,
@@ -127,7 +152,10 @@ export default function InteractionsScreen() {
             >
               <Pill size={14} color={colors.primary} />
               <Text
-                style={[typography.footnote, { color: colors.primary, marginLeft: 6, fontWeight: "600" }]}
+                style={[
+                  typography.footnote,
+                  { color: colors.primary, marginLeft: 6, fontWeight: '600' },
+                ]}
               >
                 {med.name}
               </Text>
@@ -144,19 +172,24 @@ export default function InteractionsScreen() {
           <TouchableOpacity
             onPress={() => setShowPicker(!showPicker)}
             style={{
-              flexDirection: "row",
-              alignItems: "center",
+              flexDirection: 'row',
+              alignItems: 'center',
               backgroundColor: colors.surface,
               borderRadius: radius.full,
               paddingHorizontal: 14,
               paddingVertical: 8,
               borderWidth: 1,
               borderColor: colors.surfaceBorder,
-              borderStyle: "dashed",
+              borderStyle: 'dashed',
             }}
           >
             <Plus size={16} color={colors.textMuted} />
-            <Text style={[typography.footnote, { color: colors.textMuted, marginLeft: 4 }]}>
+            <Text
+              style={[
+                typography.footnote,
+                { color: colors.textMuted, marginLeft: 4 },
+              ]}
+            >
               Add Drug
             </Text>
           </TouchableOpacity>
@@ -164,9 +197,11 @@ export default function InteractionsScreen() {
           {selectedMeds.length > 0 && (
             <TouchableOpacity
               onPress={clearAll}
-              style={{ justifyContent: "center", paddingHorizontal: 8 }}
+              style={{ justifyContent: 'center', paddingHorizontal: 8 }}
             >
-              <Text style={[typography.caption, { color: colors.danger }]}>Clear all</Text>
+              <Text style={[typography.caption, { color: colors.danger }]}>
+                Clear all
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -174,12 +209,17 @@ export default function InteractionsScreen() {
         {/* Quick-pick of common meds */}
         {showPicker && (
           <Card style={{ marginBottom: 16 }}>
-            <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: 8 }]}>
+            <Text
+              style={[
+                typography.caption,
+                { color: colors.textTertiary, marginBottom: 8 },
+              ]}
+            >
               TAP TO ADD — COMMON AGED CARE MEDICATIONS
             </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {COMMON_MEDICATIONS.filter(
-                (m) => !selectedMeds.find((s) => s.rxcui === m.rxcui)
+                (m) => !selectedMeds.find((s) => s.rxcui === m.rxcui),
               ).map((med) => (
                 <TouchableOpacity
                   key={med.rxcui}
@@ -203,7 +243,7 @@ export default function InteractionsScreen() {
         {/* Status */}
         {selectedMeds.length < 2 && (
           <Card style={{ marginBottom: 16 }}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <ArrowRightLeft size={20} color={colors.textMuted} />
               <Text
                 style={[
@@ -219,9 +259,14 @@ export default function InteractionsScreen() {
 
         {/* Loading */}
         {checking && selectedMeds.length >= 2 && (
-          <View style={{ alignItems: "center", paddingVertical: 32 }}>
+          <View style={{ alignItems: 'center', paddingVertical: 32 }}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={[typography.footnote, { color: colors.textTertiary, marginTop: 12 }]}>
+            <Text
+              style={[
+                typography.footnote,
+                { color: colors.textTertiary, marginTop: 12 },
+              ]}
+            >
               Checking {selectedMeds.length} medications for interactions…
             </Text>
           </View>
@@ -232,8 +277,8 @@ export default function InteractionsScreen() {
           <View>
             <View
               style={{
-                flexDirection: "row",
-                alignItems: "center",
+                flexDirection: 'row',
+                alignItems: 'center',
                 marginBottom: 12,
               }}
             >
@@ -244,7 +289,8 @@ export default function InteractionsScreen() {
                   { color: colors.text, marginLeft: 8 },
                 ]}
               >
-                {interactions.length} Interaction{interactions.length > 1 ? "s" : ""} Found
+                {interactions.length} Interaction
+                {interactions.length > 1 ? 's' : ''} Found
               </Text>
             </View>
 
@@ -255,7 +301,7 @@ export default function InteractionsScreen() {
                 <Card key={i} style={{ marginBottom: 12 }}>
                   <View
                     style={{
-                      position: "absolute",
+                      position: 'absolute',
                       left: 0,
                       top: 0,
                       bottom: 0,
@@ -269,15 +315,15 @@ export default function InteractionsScreen() {
                     {/* Severity label */}
                     <View
                       style={{
-                        flexDirection: "row",
-                        alignItems: "center",
+                        flexDirection: 'row',
+                        alignItems: 'center',
                         marginBottom: 8,
                       }}
                     >
                       <View
                         style={{
-                          flexDirection: "row",
-                          alignItems: "center",
+                          flexDirection: 'row',
+                          alignItems: 'center',
                           backgroundColor: style.bg,
                           paddingHorizontal: 10,
                           paddingVertical: 4,
@@ -288,7 +334,11 @@ export default function InteractionsScreen() {
                         <Text
                           style={[
                             typography.caption,
-                            { color: style.color, marginLeft: 4, fontWeight: "700" },
+                            {
+                              color: style.color,
+                              marginLeft: 4,
+                              fontWeight: '700',
+                            },
                           ]}
                         >
                           {style.label}
@@ -299,8 +349,8 @@ export default function InteractionsScreen() {
                     {/* Drugs involved */}
                     <View
                       style={{
-                        flexDirection: "row",
-                        alignItems: "center",
+                        flexDirection: 'row',
+                        alignItems: 'center',
                         marginBottom: 8,
                         gap: 4,
                       }}
@@ -308,7 +358,10 @@ export default function InteractionsScreen() {
                       {ix.drugs.filter(Boolean).map((drug, j) => (
                         <React.Fragment key={j}>
                           {j > 0 && (
-                            <ArrowRightLeft size={14} color={colors.textMuted} />
+                            <ArrowRightLeft
+                              size={14}
+                              color={colors.textMuted}
+                            />
                           )}
                           <View
                             style={{
@@ -321,7 +374,7 @@ export default function InteractionsScreen() {
                             <Text
                               style={[
                                 typography.caption,
-                                { color: colors.text, fontWeight: "600" },
+                                { color: colors.text, fontWeight: '600' },
                               ]}
                             >
                               {drug}
@@ -349,12 +402,18 @@ export default function InteractionsScreen() {
 
         {/* No interactions found */}
         {!checking && selectedMeds.length >= 2 && interactions.length === 0 && (
-          <Card style={{ marginBottom: 16, alignItems: "center", paddingVertical: 32 }}>
+          <Card
+            style={{
+              marginBottom: 16,
+              alignItems: 'center',
+              paddingVertical: 32,
+            }}
+          >
             <ShieldCheck size={48} color={colors.success} />
             <Text
               style={[
                 typography.headline,
-                { color: colors.text, marginTop: 12, textAlign: "center" },
+                { color: colors.text, marginTop: 12, textAlign: 'center' },
               ]}
             >
               No Known Interactions
@@ -365,20 +424,20 @@ export default function InteractionsScreen() {
                 {
                   color: colors.textTertiary,
                   marginTop: 6,
-                  textAlign: "center",
+                  textAlign: 'center',
                   maxWidth: 280,
                 },
               ]}
             >
-              No interactions were found between these medications in the RxNorm database.
-              Always consult a healthcare professional.
+              No interactions were found between these medications in the RxNorm
+              database. Always consult a healthcare professional.
             </Text>
           </Card>
         )}
 
         {/* Data source disclaimer */}
         <Card style={{ marginTop: 8 }}>
-          <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
             <Info size={18} color={colors.primary} style={{ marginTop: 2 }} />
             <View style={{ marginLeft: 10, flex: 1 }}>
               <Text style={[typography.subhead, { color: colors.text }]}>
@@ -390,10 +449,10 @@ export default function InteractionsScreen() {
                   { color: colors.textTertiary, marginTop: 4, lineHeight: 20 },
                 ]}
               >
-                Interaction data sourced from NLM RxNorm API.
-                This tool is for informational purposes only and does not
-                replace professional medical advice. Always verify with a
-                qualified pharmacist or physician.
+                Interaction data sourced from NLM RxNorm API. This tool is for
+                informational purposes only and does not replace professional
+                medical advice. Always verify with a qualified pharmacist or
+                physician.
               </Text>
             </View>
           </View>

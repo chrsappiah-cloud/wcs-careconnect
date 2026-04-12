@@ -1,42 +1,41 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   TextInput,
-} from "react-native";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Send, MessageCircle } from "lucide-react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { format } from "date-fns";
-import KeyboardAvoidingAnimatedView from "@/components/KeyboardAvoidingAnimatedView";
-import { colors, radius, shadows, typography } from "../../theme";
-import { mockMessages } from "../../mockData";
-import Avatar from "../../components/Avatar";
-import EmptyState from "../../components/EmptyState";
+} from 'react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Send, MessageCircle } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { format } from 'date-fns';
+import KeyboardAvoidingAnimatedView from '@/components/KeyboardAvoidingAnimatedView';
+import { colors, radius, shadows, typography } from '../../theme';
+import { mockMessages } from '../../mockData';
+import Avatar from '../../components/Avatar';
+import EmptyState from '../../components/EmptyState';
+import { apiUrl } from '../../services/apiClient';
 
 const ROLE_COLORS = {
-  Doctor: { bg: "#EDE9FE", text: "#5B21B6" },
+  Doctor: { bg: '#EDE9FE', text: '#5B21B6' },
   Nurse: { bg: colors.primaryLight, text: colors.primary },
-  CNA: { bg: "#FEF3C7", text: "#92400E" },
-  Pharmacist: { bg: "#D1FAE5", text: "#065F46" },
+  CNA: { bg: '#FEF3C7', text: '#92400E' },
+  Pharmacist: { bg: '#D1FAE5', text: '#065F46' },
 };
 
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState('');
   const scrollRef = useRef(null);
 
-  const {
-    data: messages = mockMessages,
-    isLoading,
-  } = useQuery({
-    queryKey: ["messages"],
+  const { data: messages = mockMessages, isLoading } = useQuery({
+    queryKey: ['messages'],
     queryFn: async () => {
-      const response = await fetch("/api/messages");
-      if (!response.ok) throw new Error(`Messages fetch failed: ${response.status}`);
+      const response = await fetch(apiUrl('/api/messages'));
+      if (!response.ok)
+        throw new Error(`Messages fetch failed: ${response.status}`);
       return response.json();
     },
     placeholderData: mockMessages,
@@ -44,21 +43,22 @@ export default function MessagesScreen() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (msg) => {
-      const response = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch(apiUrl('/api/messages'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...msg,
-          sender_name: "Nurse Sarah",
-          sender_role: "Nurse",
+          sender_name: 'Nurse Sarah',
+          sender_role: 'Nurse',
         }),
       });
-      if (!response.ok) throw new Error(`Message send failed: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`Message send failed: ${response.status}`);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages"] });
-      setContent("");
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      setContent('');
     },
   });
 
@@ -74,7 +74,7 @@ export default function MessagesScreen() {
     }
   }, [messages.length]);
 
-  const isOwnMessage = (msg) => msg.sender_role === "Nurse";
+  const isOwnMessage = (msg) => msg.sender_role === 'Nurse';
 
   return (
     <KeyboardAvoidingAnimatedView
@@ -94,13 +94,20 @@ export default function MessagesScreen() {
           <Text style={[typography.title2, { color: colors.text }]}>
             Care Team
           </Text>
-          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4, gap: 12 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginTop: 4,
+              gap: 12,
+            }}
+          >
             {Object.entries(ROLE_COLORS).map(([role, config]) => (
               <View
                 key={role}
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
+                  flexDirection: 'row',
+                  alignItems: 'center',
                   gap: 4,
                 }}
               >
@@ -140,25 +147,33 @@ export default function MessagesScreen() {
           ) : (
             messages.map((msg, idx) => {
               const own = isOwnMessage(msg);
-              const roleConfig = ROLE_COLORS[msg.sender_role] || ROLE_COLORS.CNA;
+              const roleConfig =
+                ROLE_COLORS[msg.sender_role] || ROLE_COLORS.CNA;
               const showAvatar =
                 !own &&
-                (idx === 0 || messages[idx - 1].sender_name !== msg.sender_name);
+                (idx === 0 ||
+                  messages[idx - 1].sender_name !== msg.sender_name);
 
               return (
                 <View
                   key={msg.id}
                   style={{
-                    flexDirection: "row",
-                    alignSelf: own ? "flex-end" : "flex-start",
-                    maxWidth: "82%",
+                    flexDirection: 'row',
+                    alignSelf: own ? 'flex-end' : 'flex-start',
+                    maxWidth: '82%',
                     marginBottom: 12,
                     gap: 8,
                   }}
                 >
                   {/* Avatar for others */}
                   {!own && (
-                    <View style={{ width: 32, alignItems: "center", justifyContent: "flex-end" }}>
+                    <View
+                      style={{
+                        width: 32,
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                      }}
+                    >
                       {showAvatar ? (
                         <Avatar name={msg.sender_name} size={32} />
                       ) : null}
@@ -170,14 +185,18 @@ export default function MessagesScreen() {
                     {showAvatar && !own && (
                       <View
                         style={{
-                          flexDirection: "row",
-                          alignItems: "center",
+                          flexDirection: 'row',
+                          alignItems: 'center',
                           marginBottom: 4,
                           gap: 6,
                         }}
                       >
                         <Text
-                          style={{ fontSize: 13, fontWeight: "600", color: colors.textTertiary }}
+                          style={{
+                            fontSize: 13,
+                            fontWeight: '600',
+                            color: colors.textTertiary,
+                          }}
                         >
                           {msg.sender_name}
                         </Text>
@@ -190,7 +209,11 @@ export default function MessagesScreen() {
                           }}
                         >
                           <Text
-                            style={{ fontSize: 10, fontWeight: "700", color: roleConfig.text }}
+                            style={{
+                              fontSize: 10,
+                              fontWeight: '700',
+                              color: roleConfig.text,
+                            }}
                           >
                             {msg.sender_role}
                           </Text>
@@ -229,10 +252,10 @@ export default function MessagesScreen() {
                         fontSize: 11,
                         color: colors.textMuted,
                         marginTop: 3,
-                        alignSelf: own ? "flex-end" : "flex-start",
+                        alignSelf: own ? 'flex-end' : 'flex-start',
                       }}
                     >
-                      {format(new Date(msg.created_at), "h:mm a")}
+                      {format(new Date(msg.created_at), 'h:mm a')}
                     </Text>
                   </View>
                 </View>
@@ -250,8 +273,8 @@ export default function MessagesScreen() {
             backgroundColor: colors.surface,
             borderTopWidth: 1,
             borderColor: colors.borderLight,
-            flexDirection: "row",
-            alignItems: "flex-end",
+            flexDirection: 'row',
+            alignItems: 'flex-end',
             gap: 10,
           }}
         >
@@ -283,8 +306,8 @@ export default function MessagesScreen() {
               height: 44,
               borderRadius: 22,
               backgroundColor: content.trim() ? colors.primary : colors.divider,
-              alignItems: "center",
-              justifyContent: "center",
+              alignItems: 'center',
+              justifyContent: 'center',
               ...shadows.sm,
             }}
           >

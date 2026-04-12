@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-} from "react-native";
-import { useQuery } from "@tanstack/react-query";
+} from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import {
   Search,
   Pill,
@@ -15,11 +15,11 @@ import {
   ChevronRight,
   Info,
   X,
-} from "lucide-react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors, radius, shadows, typography } from "../../theme";
-import Card from "../../components/Card";
-import EmptyState from "../../components/EmptyState";
+} from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, radius, shadows, typography } from '../../theme';
+import Card from '../../components/Card';
+import EmptyState from '../../components/EmptyState';
 import {
   searchDrugs,
   topAdverseReactions,
@@ -27,19 +27,16 @@ import {
   suggestDrugSpelling,
   searchAdverseEvents,
   COMMON_MEDICATIONS,
-} from "../../services/auMedApi";
+} from '../../services/auMedApi';
 
 export default function MedicationsScreen() {
   const insets = useSafeAreaInsets();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [selectedDrug, setSelectedDrug] = useState(null);
 
   // Drug search via RxNorm
-  const {
-    data: drugs = [],
-    isFetching: isSearching,
-  } = useQuery({
-    queryKey: ["drugSearch", search],
+  const { data: drugs = [], isFetching: isSearching } = useQuery({
+    queryKey: ['drugSearch', search],
     queryFn: () => searchDrugs(search),
     enabled: search.trim().length >= 2,
     staleTime: 60000,
@@ -48,7 +45,7 @@ export default function MedicationsScreen() {
 
   // Drug details (when selected)
   const { data: drugInfo, isFetching: loadingInfo } = useQuery({
-    queryKey: ["drugInfo", selectedDrug?.rxcui],
+    queryKey: ['drugInfo', selectedDrug?.rxcui],
     queryFn: () => getDrugByRxcui(selectedDrug.rxcui),
     enabled: !!selectedDrug?.rxcui,
     staleTime: 300000,
@@ -56,7 +53,7 @@ export default function MedicationsScreen() {
 
   // Top adverse reactions for selected drug (OpenFDA)
   const { data: reactions = [], isFetching: loadingReactions } = useQuery({
-    queryKey: ["adverseReactions", selectedDrug?.name],
+    queryKey: ['adverseReactions', selectedDrug?.name],
     queryFn: () => topAdverseReactions(selectedDrug.name, 8),
     enabled: !!selectedDrug?.name,
     staleTime: 300000,
@@ -64,7 +61,7 @@ export default function MedicationsScreen() {
 
   // Spelling suggestions when no results found
   const { data: suggestions = [] } = useQuery({
-    queryKey: ["spellingSuggestions", search],
+    queryKey: ['spellingSuggestions', search],
     queryFn: () => suggestDrugSpelling(search),
     enabled: search.trim().length >= 2 && drugs.length === 0 && !isSearching,
     staleTime: 60000,
@@ -72,7 +69,7 @@ export default function MedicationsScreen() {
 
   // Detailed adverse events for selected drug (OpenFDA)
   const { data: adverseEvents = [], isFetching: loadingEvents } = useQuery({
-    queryKey: ["adverseEvents", selectedDrug?.name],
+    queryKey: ['adverseEvents', selectedDrug?.name],
     queryFn: () => searchAdverseEvents(selectedDrug.name, 5),
     enabled: !!selectedDrug?.name,
     staleTime: 300000,
@@ -86,14 +83,23 @@ export default function MedicationsScreen() {
 
   return (
     <View
-      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingTop: insets.top,
+      }}
     >
       {/* Header */}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
         <Text style={[typography.largeTitle, { color: colors.text }]}>
           Medications
         </Text>
-        <Text style={[typography.footnote, { color: colors.textTertiary, marginTop: 2 }]}>
+        <Text
+          style={[
+            typography.footnote,
+            { color: colors.textTertiary, marginTop: 2 },
+          ]}
+        >
           Australian drug data via RxNorm & OpenFDA
         </Text>
       </View>
@@ -102,8 +108,8 @@ export default function MedicationsScreen() {
       <View style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
         <View
           style={{
-            flexDirection: "row",
-            alignItems: "center",
+            flexDirection: 'row',
+            alignItems: 'center',
             backgroundColor: colors.surface,
             borderRadius: radius.lg,
             paddingHorizontal: 14,
@@ -131,11 +137,13 @@ export default function MedicationsScreen() {
             autoCapitalize="none"
             autoCorrect={false}
           />
-          {isSearching && <ActivityIndicator size="small" color={colors.primary} />}
+          {isSearching && (
+            <ActivityIndicator size="small" color={colors.primary} />
+          )}
           {search.length > 0 && (
             <TouchableOpacity
               onPress={() => {
-                setSearch("");
+                setSearch('');
                 setSelectedDrug(null);
               }}
             >
@@ -155,9 +163,9 @@ export default function MedicationsScreen() {
           <Card variant="elevated" style={{ marginBottom: 16 }}>
             <View
               style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
               }}
             >
               <View style={{ flex: 1 }}>
@@ -171,11 +179,13 @@ export default function MedicationsScreen() {
                       paddingHorizontal: 8,
                       paddingVertical: 2,
                       borderRadius: radius.sm,
-                      alignSelf: "flex-start",
+                      alignSelf: 'flex-start',
                       marginTop: 4,
                     }}
                   >
-                    <Text style={[typography.caption, { color: colors.primary }]}>
+                    <Text
+                      style={[typography.caption, { color: colors.primary }]}
+                    >
                       RxCUI: {selectedDrug.rxcui}
                     </Text>
                   </View>
@@ -198,11 +208,16 @@ export default function MedicationsScreen() {
                 {drugInfo.ingredients.length > 0 && (
                   <View style={{ marginBottom: 8 }}>
                     <Text
-                      style={[typography.caption, { color: colors.textTertiary, marginBottom: 4 }]}
+                      style={[
+                        typography.caption,
+                        { color: colors.textTertiary, marginBottom: 4 },
+                      ]}
                     >
                       ACTIVE INGREDIENTS
                     </Text>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                    <View
+                      style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}
+                    >
                       {drugInfo.ingredients.map((ing, i) => (
                         <View
                           key={i}
@@ -213,7 +228,12 @@ export default function MedicationsScreen() {
                             borderRadius: radius.full,
                           }}
                         >
-                          <Text style={[typography.caption, { color: colors.successDark }]}>
+                          <Text
+                            style={[
+                              typography.caption,
+                              { color: colors.successDark },
+                            ]}
+                          >
                             {ing}
                           </Text>
                         </View>
@@ -224,25 +244,42 @@ export default function MedicationsScreen() {
                 {drugInfo.brandNames.length > 0 && (
                   <View style={{ marginBottom: 8 }}>
                     <Text
-                      style={[typography.caption, { color: colors.textTertiary, marginBottom: 4 }]}
+                      style={[
+                        typography.caption,
+                        { color: colors.textTertiary, marginBottom: 4 },
+                      ]}
                     >
                       BRAND NAMES
                     </Text>
-                    <Text style={[typography.callout, { color: colors.textSecondary }]}>
-                      {drugInfo.brandNames.slice(0, 5).join(", ")}
-                      {drugInfo.brandNames.length > 5 && ` +${drugInfo.brandNames.length - 5} more`}
+                    <Text
+                      style={[
+                        typography.callout,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {drugInfo.brandNames.slice(0, 5).join(', ')}
+                      {drugInfo.brandNames.length > 5 &&
+                        ` +${drugInfo.brandNames.length - 5} more`}
                     </Text>
                   </View>
                 )}
                 {drugInfo.doseForms.length > 0 && (
                   <View>
                     <Text
-                      style={[typography.caption, { color: colors.textTertiary, marginBottom: 4 }]}
+                      style={[
+                        typography.caption,
+                        { color: colors.textTertiary, marginBottom: 4 },
+                      ]}
                     >
                       DOSE FORMS
                     </Text>
-                    <Text style={[typography.callout, { color: colors.textSecondary }]}>
-                      {drugInfo.doseForms.join(", ")}
+                    <Text
+                      style={[
+                        typography.callout,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {drugInfo.doseForms.join(', ')}
                     </Text>
                   </View>
                 )}
@@ -254,8 +291,8 @@ export default function MedicationsScreen() {
               <View style={{ marginTop: 16 }}>
                 <View
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
+                    flexDirection: 'row',
+                    alignItems: 'center',
                     marginBottom: 8,
                   }}
                 >
@@ -276,15 +313,25 @@ export default function MedicationsScreen() {
                     <View key={i} style={{ marginBottom: 8 }}>
                       <View
                         style={{
-                          flexDirection: "row",
-                          justifyContent: "space-between",
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
                           marginBottom: 3,
                         }}
                       >
-                        <Text style={[typography.footnote, { color: colors.text, flex: 1 }]}>
+                        <Text
+                          style={[
+                            typography.footnote,
+                            { color: colors.text, flex: 1 },
+                          ]}
+                        >
                           {r.reaction}
                         </Text>
-                        <Text style={[typography.caption, { color: colors.textMuted }]}>
+                        <Text
+                          style={[
+                            typography.caption,
+                            { color: colors.textMuted },
+                          ]}
+                        >
                           {r.count.toLocaleString()}
                         </Text>
                       </View>
@@ -293,19 +340,19 @@ export default function MedicationsScreen() {
                           height: 6,
                           backgroundColor: colors.borderLight,
                           borderRadius: 3,
-                          overflow: "hidden",
+                          overflow: 'hidden',
                         }}
                       >
                         <View
                           style={{
-                            height: "100%",
+                            height: '100%',
                             width: `${pct}%`,
                             backgroundColor:
                               pct > 70
                                 ? colors.danger
                                 : pct > 40
-                                ? colors.warning
-                                : colors.primary,
+                                  ? colors.warning
+                                  : colors.primary,
                             borderRadius: 3,
                           }}
                         />
@@ -340,12 +387,22 @@ export default function MedicationsScreen() {
                       marginBottom: 6,
                     }}
                   >
-                    <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                      {evt.reactions?.join(", ") || "No reaction data"}
+                    <Text
+                      style={[
+                        typography.caption,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {evt.reactions?.join(', ') || 'No reaction data'}
                     </Text>
                     {evt.serious && evt.seriousnessDescription?.length > 0 && (
-                      <Text style={[typography.caption, { color: colors.danger, marginTop: 2 }]}>
-                        Serious: {evt.seriousnessDescription.join(", ")}
+                      <Text
+                        style={[
+                          typography.caption,
+                          { color: colors.danger, marginTop: 2 },
+                        ]}
+                      >
+                        Serious: {evt.seriousnessDescription.join(', ')}
                       </Text>
                     )}
                   </View>
@@ -378,9 +435,9 @@ export default function MedicationsScreen() {
                 <Card style={{ marginBottom: 8 }}>
                   <View
                     style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                     }}
                   >
                     <View
@@ -389,8 +446,8 @@ export default function MedicationsScreen() {
                         height: 40,
                         borderRadius: 12,
                         backgroundColor: colors.primaryLight,
-                        alignItems: "center",
-                        justifyContent: "center",
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         marginRight: 12,
                       }}
                     >
@@ -403,7 +460,12 @@ export default function MedicationsScreen() {
                       >
                         {drug.name}
                       </Text>
-                      <Text style={[typography.caption, { color: colors.textMuted }]}>
+                      <Text
+                        style={[
+                          typography.caption,
+                          { color: colors.textMuted },
+                        ]}
+                      >
                         RxCUI: {drug.rxcui} · {drug.tty}
                       </Text>
                     </View>
@@ -416,35 +478,54 @@ export default function MedicationsScreen() {
         )}
 
         {/* Empty search state with spelling suggestions */}
-        {search.trim().length >= 2 && displayDrugs.length === 0 && !isSearching && (
-          <View>
-            <EmptyState
-              icon={Pill}
-              title="No medications found"
-              subtitle={suggestions.length > 0 ? "Did you mean:" : "Try a different search term"}
-            />
-            {suggestions.length > 0 && (
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12, justifyContent: "center" }}>
-                {suggestions.map((s, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    onPress={() => setSearch(s)}
-                    style={{
-                      backgroundColor: colors.primaryLight,
-                      paddingHorizontal: 14,
-                      paddingVertical: 8,
-                      borderRadius: radius.lg,
-                    }}
-                  >
-                    <Text style={[typography.footnote, { color: colors.primary, fontWeight: "600" }]}>
-                      {s}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
-        )}
+        {search.trim().length >= 2 &&
+          displayDrugs.length === 0 &&
+          !isSearching && (
+            <View>
+              <EmptyState
+                icon={<Pill size={36} color={colors.textMuted} />}
+                title="No medications found"
+                subtitle={
+                  suggestions.length > 0
+                    ? 'Did you mean:'
+                    : 'Try a different search term'
+                }
+              />
+              {suggestions.length > 0 && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                    marginTop: 12,
+                    justifyContent: 'center',
+                  }}
+                >
+                  {suggestions.map((s, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      onPress={() => setSearch(s)}
+                      style={{
+                        backgroundColor: colors.primaryLight,
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: radius.lg,
+                      }}
+                    >
+                      <Text
+                        style={[
+                          typography.footnote,
+                          { color: colors.primary, fontWeight: '600' },
+                        ]}
+                      >
+                        {s}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
 
         {/* Common medications quick access */}
         {!selectedDrug && search.trim().length < 2 && (
@@ -459,8 +540,8 @@ export default function MedicationsScreen() {
             </Text>
             <View
               style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
+                flexDirection: 'row',
+                flexWrap: 'wrap',
                 gap: 8,
               }}
             >
@@ -468,11 +549,11 @@ export default function MedicationsScreen() {
                 <TouchableOpacity
                   key={med.rxcui}
                   onPress={() => {
-                    setSearch(med.name.split(" ")[0]);
+                    setSearch(med.name.split(' ')[0]);
                     setSelectedDrug({
                       rxcui: med.rxcui,
                       name: med.name,
-                      tty: "IN",
+                      tty: 'IN',
                     });
                   }}
                   activeOpacity={0.7}
@@ -495,8 +576,12 @@ export default function MedicationsScreen() {
 
             {/* Data source info */}
             <Card style={{ marginTop: 24 }}>
-              <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-                <Info size={18} color={colors.primary} style={{ marginTop: 2 }} />
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <Info
+                  size={18}
+                  color={colors.primary}
+                  style={{ marginTop: 2 }}
+                />
                 <View style={{ marginLeft: 10, flex: 1 }}>
                   <Text style={[typography.subhead, { color: colors.text }]}>
                     Data Sources
@@ -504,11 +589,15 @@ export default function MedicationsScreen() {
                   <Text
                     style={[
                       typography.footnote,
-                      { color: colors.textTertiary, marginTop: 4, lineHeight: 20 },
+                      {
+                        color: colors.textTertiary,
+                        marginTop: 4,
+                        lineHeight: 20,
+                      },
                     ]}
                   >
-                    Drug search & identification via NLM RxNorm API.{"\n"}
-                    Adverse event data from US FDA OpenFDA database.{"\n"}
+                    Drug search & identification via NLM RxNorm API.{'\n'}
+                    Adverse event data from US FDA OpenFDA database.{'\n'}
                     Australian terminology via CSIRO Ontoserver (SNOMED CT-AU).
                   </Text>
                 </View>

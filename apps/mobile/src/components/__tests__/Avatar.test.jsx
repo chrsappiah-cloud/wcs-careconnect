@@ -45,7 +45,14 @@ describe('Avatar', () => {
   });
 
   it('uses color based on first character code', () => {
-    const bgColors = ['#DBEAFE', '#E0E7FF', '#FCE7F3', '#D1FAE5', '#FEF3C7', '#E5E7EB'];
+    const bgColors = [
+      '#DBEAFE',
+      '#E0E7FF',
+      '#FCE7F3',
+      '#D1FAE5',
+      '#FEF3C7',
+      '#E5E7EB',
+    ];
     const { toJSON: toJSON_A } = render(<Avatar name="Alice" />);
     const idx = 'A'.charCodeAt(0) % bgColors.length;
     expect(toJSON_A().props.style.backgroundColor).toBe(bgColors[idx]);

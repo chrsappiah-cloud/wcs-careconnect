@@ -1,7 +1,7 @@
-import React, { useCallback } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Activity,
@@ -15,48 +15,49 @@ import {
   MapPin,
   Calendar,
   FileText,
-} from "lucide-react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors, radius, typography, shadows } from "../../../theme";
-import { mockResidents, mockReadings, mockTasks } from "../../../mockData";
-import Avatar from "../../../components/Avatar";
-import StatusBadge from "../../../components/StatusBadge";
-import Card from "../../../components/Card";
-import SectionHeader from "../../../components/SectionHeader";
-import EmptyState from "../../../components/EmptyState";
+} from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, radius, typography, shadows } from '../../../theme';
+import { mockResidents, mockReadings, mockTasks } from '../../../mockData';
+import Avatar from '../../../components/Avatar';
+import StatusBadge from '../../../components/StatusBadge';
+import Card from '../../../components/Card';
+import SectionHeader from '../../../components/SectionHeader';
+import EmptyState from '../../../components/EmptyState';
+import { apiUrl } from '../../../services/apiClient';
 
 const VITAL_CONFIG = {
   glucose: {
-    label: "Glucose",
-    unit: "mg/dL",
+    label: 'Glucose',
+    unit: 'mg/dL',
     icon: Droplet,
-    iconColor: "#EF4444",
-    bg: "#FEF2F2",
-    getStatus: (v) => (v > 180 ? "high" : v < 70 ? "low" : "normal"),
+    iconColor: '#EF4444',
+    bg: '#FEF2F2',
+    getStatus: (v) => (v > 180 ? 'high' : v < 70 ? 'low' : 'normal'),
   },
   hr: {
-    label: "Heart Rate",
-    unit: "bpm",
+    label: 'Heart Rate',
+    unit: 'bpm',
     icon: Heart,
-    iconColor: "#DC2626",
-    bg: "#FFF1F2",
-    getStatus: (v) => (v > 100 ? "high" : v < 60 ? "low" : "normal"),
+    iconColor: '#DC2626',
+    bg: '#FFF1F2',
+    getStatus: (v) => (v > 100 ? 'high' : v < 60 ? 'low' : 'normal'),
   },
   spo2: {
-    label: "SpO2",
-    unit: "%",
+    label: 'SpO2',
+    unit: '%',
     icon: Wind,
     iconColor: colors.primary,
     bg: colors.primaryLight,
-    getStatus: (v) => (v < 95 ? "low" : "normal"),
+    getStatus: (v) => (v < 95 ? 'low' : 'normal'),
   },
   bp_systolic: {
-    label: "Blood Pressure",
-    unit: "mmHg",
+    label: 'Blood Pressure',
+    unit: 'mmHg',
     icon: Activity,
-    iconColor: "#7C3AED",
-    bg: "#F5F3FF",
-    getStatus: (v) => (v > 140 ? "high" : v < 90 ? "low" : "normal"),
+    iconColor: '#7C3AED',
+    bg: '#F5F3FF',
+    getStatus: (v) => (v > 140 ? 'high' : v < 90 ? 'low' : 'normal'),
   },
 };
 
@@ -73,10 +74,11 @@ export default function ResidentDetailScreen() {
   const queryClient = useQueryClient();
 
   const { data: residents = mockResidents } = useQuery({
-    queryKey: ["residents"],
+    queryKey: ['residents'],
     queryFn: async () => {
-      const response = await fetch("/api/residents");
-      if (!response.ok) throw new Error(`Residents fetch failed: ${response.status}`);
+      const response = await fetch(apiUrl('/api/residents'));
+      if (!response.ok)
+        throw new Error(`Residents fetch failed: ${response.status}`);
       return response.json();
     },
     placeholderData: mockResidents,
@@ -85,73 +87,79 @@ export default function ResidentDetailScreen() {
   const resident = residents.find((r) => r.id.toString() === id);
 
   const { data: readings = [] } = useQuery({
-    queryKey: ["readings", id],
+    queryKey: ['readings', id],
     queryFn: async () => {
-      const response = await fetch(`/api/readings?residentId=${id}`);
-      if (!response.ok) throw new Error(`Readings fetch failed: ${response.status}`);
+      const response = await fetch(apiUrl(`/api/readings?residentId=${id}`));
+      if (!response.ok)
+        throw new Error(`Readings fetch failed: ${response.status}`);
       return response.json();
     },
     enabled: !!id,
     placeholderData: mockReadings.filter(
-      (r) => r.resident_id?.toString() === id
+      (r) => r.resident_id?.toString() === id,
     ),
   });
 
   const { data: tasks = [] } = useQuery({
-    queryKey: ["tasks", id],
+    queryKey: ['tasks', id],
     queryFn: async () => {
-      const response = await fetch(`/api/tasks?residentId=${id}&status=all`);
-      if (!response.ok) throw new Error(`Tasks fetch failed: ${response.status}`);
+      const response = await fetch(
+        apiUrl(`/api/tasks?residentId=${id}&status=all`),
+      );
+      if (!response.ok)
+        throw new Error(`Tasks fetch failed: ${response.status}`);
       return response.json();
     },
     enabled: !!id,
     placeholderData: mockTasks.filter(
-      (t) => t.resident_id?.toString() === id && t.status === "pending"
+      (t) => t.resident_id?.toString() === id && t.status === 'pending',
     ),
   });
 
   const addReadingMutation = useMutation({
     mutationFn: async (reading) => {
-      const response = await fetch("/api/readings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch(apiUrl('/api/readings'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...reading, resident_id: id }),
       });
-      if (!response.ok) throw new Error(`Reading add failed: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`Reading add failed: ${response.status}`);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["readings", id] });
-      queryClient.invalidateQueries({ queryKey: ["residents"] });
+      queryClient.invalidateQueries({ queryKey: ['readings', id] });
+      queryClient.invalidateQueries({ queryKey: ['residents'] });
       Alert.alert(
-        "Reading Recorded",
-        "Data synced successfully via BLE simulation."
+        'Reading Recorded',
+        'Data synced successfully via BLE simulation.',
       );
     },
   });
 
   const toggleTaskMutation = useMutation({
     mutationFn: async (task) => {
-      const newStatus = task.status === "completed" ? "pending" : "completed";
-      const response = await fetch("/api/tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+      const response = await fetch(apiUrl('/api/tasks'), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: task.id, status: newStatus }),
       });
-      if (!response.ok) throw new Error(`Task toggle failed: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`Task toggle failed: ${response.status}`);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", id] });
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
     onError: (err) => {
-      Alert.alert("Error", "Failed to update task. Please try again.");
+      Alert.alert('Error', 'Failed to update task. Please try again.');
     },
   });
 
   const simulateBLEReading = useCallback(() => {
-    const metrics = ["glucose", "hr", "spo2", "bp_systolic"];
+    const metrics = ['glucose', 'hr', 'spo2', 'bp_systolic'];
     const randomMetric = metrics[Math.floor(Math.random() * metrics.length)];
     const valueMap = {
       glucose: Math.floor(Math.random() * (250 - 60) + 60),
@@ -160,35 +168,39 @@ export default function ResidentDetailScreen() {
       bp_systolic: Math.floor(Math.random() * (160 - 100) + 100),
     };
     const units = {
-      glucose: "mg/dL",
-      hr: "bpm",
-      spo2: "%",
-      bp_systolic: "mmHg",
+      glucose: 'mg/dL',
+      hr: 'bpm',
+      spo2: '%',
+      bp_systolic: 'mmHg',
     };
 
     addReadingMutation.mutate({
       metric: randomMetric,
       value: valueMap[randomMetric],
       unit: units[randomMetric],
-      device_id: "BLE-SIM-123",
-      source: "ble",
+      device_id: 'BLE-SIM-123',
+      source: 'ble',
     });
   }, [addReadingMutation]);
 
   if (!resident) return null;
 
-  const pendingTasks = tasks.filter((t) => t.status === "pending");
+  const pendingTasks = tasks.filter((t) => t.status === 'pending');
 
   return (
     <View
-      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingTop: insets.top,
+      }}
     >
       {/* Header */}
       <View
         style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           paddingHorizontal: 16,
           paddingVertical: 10,
           backgroundColor: colors.surface,
@@ -203,8 +215,8 @@ export default function ResidentDetailScreen() {
             height: 36,
             borderRadius: 10,
             backgroundColor: colors.surfaceSecondary,
-            alignItems: "center",
-            justifyContent: "center",
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <ArrowLeft size={20} color={colors.text} />
@@ -220,8 +232,8 @@ export default function ResidentDetailScreen() {
             height: 36,
             borderRadius: 10,
             backgroundColor: colors.primaryLight,
-            alignItems: "center",
-            justifyContent: "center",
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <Bluetooth size={18} color={colors.primary} />
@@ -235,7 +247,7 @@ export default function ResidentDetailScreen() {
       >
         {/* Profile Card */}
         <Card variant="elevated" style={{ marginBottom: 20 }}>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Avatar name={resident.name} size={64} />
             <View style={{ marginLeft: 16, flex: 1 }}>
               <Text style={[typography.title3, { color: colors.text }]}>
@@ -243,8 +255,8 @@ export default function ResidentDetailScreen() {
               </Text>
               <View
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
+                  flexDirection: 'row',
+                  alignItems: 'center',
                   gap: 4,
                   marginTop: 2,
                 }}
@@ -262,7 +274,7 @@ export default function ResidentDetailScreen() {
           {(resident.age || resident.conditions) && (
             <View
               style={{
-                flexDirection: "row",
+                flexDirection: 'row',
                 marginTop: 14,
                 paddingTop: 14,
                 borderTopWidth: 1,
@@ -271,7 +283,9 @@ export default function ResidentDetailScreen() {
               }}
             >
               {resident.age && (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
+                >
                   <Calendar size={13} color={colors.textMuted} />
                   <Text style={{ fontSize: 13, color: colors.textSecondary }}>
                     Age {resident.age}
@@ -281,8 +295,8 @@ export default function ResidentDetailScreen() {
               {resident.conditions && (
                 <View
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
+                    flexDirection: 'row',
+                    alignItems: 'center',
                     gap: 5,
                     flex: 1,
                   }}
@@ -290,9 +304,15 @@ export default function ResidentDetailScreen() {
                   <FileText size={13} color={colors.textMuted} />
                   <Text
                     numberOfLines={1}
-                    style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }}
+                    style={{
+                      fontSize: 13,
+                      color: colors.textSecondary,
+                      flex: 1,
+                    }}
                   >
-                    {resident.conditions}
+                    {Array.isArray(resident.conditions)
+                      ? resident.conditions.join(', ')
+                      : resident.conditions}
                   </Text>
                 </View>
               )}
@@ -334,8 +354,8 @@ export default function ResidentDetailScreen() {
                     height: 40,
                     borderRadius: 12,
                     backgroundColor: config.bg,
-                    alignItems: "center",
-                    justifyContent: "center",
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     marginBottom: 10,
                   }}
                 >
@@ -344,17 +364,17 @@ export default function ResidentDetailScreen() {
                 <Text
                   style={{
                     fontSize: 26,
-                    fontWeight: "700",
+                    fontWeight: '700',
                     color: status ? STATUS_COLORS[status] : colors.text,
                   }}
                 >
-                  {val ?? "--"}
+                  {val ?? '--'}
                 </Text>
                 <Text
                   style={{
                     fontSize: 12,
                     color: colors.textMuted,
-                    fontWeight: "500",
+                    fontWeight: '500',
                   }}
                 >
                   {config.unit}
@@ -363,7 +383,7 @@ export default function ResidentDetailScreen() {
                   style={{
                     fontSize: 13,
                     color: colors.textSecondary,
-                    fontWeight: "600",
+                    fontWeight: '600',
                     marginTop: 2,
                   }}
                 >
@@ -383,18 +403,29 @@ export default function ResidentDetailScreen() {
               <TouchableOpacity
                 hitSlop={8}
                 onPress={() =>
-                  Alert.alert("Add Task", "Create a new task for this resident?", [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Add", onPress: () => Alert.alert("Coming Soon", "Task creation will be available in a future update.") },
-                  ])
+                  Alert.alert(
+                    'Add Task',
+                    'Create a new task for this resident?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Add',
+                        onPress: () =>
+                          Alert.alert(
+                            'Coming Soon',
+                            'Task creation will be available in a future update.',
+                          ),
+                      },
+                    ],
+                  )
                 }
                 style={{
                   width: 30,
                   height: 30,
                   borderRadius: 8,
                   backgroundColor: colors.primaryLight,
-                  alignItems: "center",
-                  justifyContent: "center",
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
                 <Plus size={16} color={colors.primary} />
@@ -416,28 +447,28 @@ export default function ResidentDetailScreen() {
                 activeOpacity={0.7}
                 onPress={() => {
                   Alert.alert(
-                    "Complete Task",
+                    'Complete Task',
                     `Mark "${task.title}" as completed?`,
                     [
-                      { text: "Cancel", style: "cancel" },
+                      { text: 'Cancel', style: 'cancel' },
                       {
-                        text: "Complete",
+                        text: 'Complete',
                         onPress: () => toggleTaskMutation.mutate(task),
                       },
-                    ]
+                    ],
                   );
                 }}
               >
                 <Card style={{ marginBottom: 10 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <View
                       style={{
                         width: 38,
                         height: 38,
                         borderRadius: 10,
                         backgroundColor: colors.surfaceSecondary,
-                        alignItems: "center",
-                        justifyContent: "center",
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
                       <Clock size={18} color={colors.textSecondary} />
@@ -446,7 +477,7 @@ export default function ResidentDetailScreen() {
                       <Text
                         style={{
                           fontSize: 15,
-                          fontWeight: "600",
+                          fontWeight: '600',
                           color: colors.text,
                         }}
                       >

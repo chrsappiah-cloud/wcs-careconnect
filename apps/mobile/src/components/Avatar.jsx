@@ -5,7 +5,12 @@ import { colors, radius } from '../theme';
 
 export default function Avatar({ name, size = 56, uri }) {
   const initials = name
-    ? name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+    ? name
+        .split(' ')
+        .map((w) => w[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
     : '?';
 
   if (uri) {
@@ -24,8 +29,22 @@ export default function Avatar({ name, size = 56, uri }) {
     }
   }
 
-  const bgColors = ['#DBEAFE', '#E0E7FF', '#FCE7F3', '#D1FAE5', '#FEF3C7', '#E5E7EB'];
-  const textColors = ['#1E40AF', '#3730A3', '#BE185D', '#065F46', '#92400E', '#374151'];
+  const bgColors = [
+    '#DBEAFE',
+    '#E0E7FF',
+    '#FCE7F3',
+    '#D1FAE5',
+    '#FEF3C7',
+    '#E5E7EB',
+  ];
+  const textColors = [
+    '#1E40AF',
+    '#3730A3',
+    '#BE185D',
+    '#065F46',
+    '#92400E',
+    '#374151',
+  ];
   const index = name ? name.charCodeAt(0) % bgColors.length : 0;
 
   return (

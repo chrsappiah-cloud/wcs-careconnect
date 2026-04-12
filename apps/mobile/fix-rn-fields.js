@@ -34,10 +34,18 @@ for (const dir of getPkgDirs()) {
       const srcDir = path.join(dir, path.dirname(stripped));
       const base = path.basename(stripped);
       const exts = ['.ts', '.tsx', '.js', '.jsx'];
-      if (exts.some(ext => fs.existsSync(path.join(srcDir, base + ext)))) {
+      if (exts.some((ext) => fs.existsSync(path.join(srcDir, base + ext)))) {
         pkg['react-native'] = stripped;
         fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
-        console.log('FIXED ' + pkg.name + ': ' + rnField + ' -> ' + stripped + ' (stripped ext)');
+        console.log(
+          'FIXED ' +
+            pkg.name +
+            ': ' +
+            rnField +
+            ' -> ' +
+            stripped +
+            ' (stripped ext)',
+        );
         fixed++;
         continue;
       }
@@ -45,21 +53,34 @@ for (const dir of getPkgDirs()) {
 
     // Strategy 2: Check if src file can be resolved without changes
     const srcBase = path.join(dir, rnField);
-    if (['.ts', '.tsx', '.js', '.jsx', ''].some(ext => fs.existsSync(srcBase + ext))) {
+    if (
+      ['.ts', '.tsx', '.js', '.jsx', ''].some((ext) =>
+        fs.existsSync(srcBase + ext),
+      )
+    ) {
       continue; // Metro should handle this
     }
 
     // Strategy 3: Fall back to compiled output (prefer commonjs to avoid codegen Babel plugin
     // issues — ESM `export default codegenNativeComponent(...)` triggers @react-native/babel-plugin-codegen
     // which fails on compiled JS lacking TypeScript type annotations)
-    const candidates = ['lib/commonjs/index', 'lib/commonjs/index.js', 'lib/module/index', 'lib/module/index.js', pkg.main, pkg.module];
+    const candidates = [
+      'lib/commonjs/index',
+      'lib/commonjs/index.js',
+      'lib/module/index',
+      'lib/module/index.js',
+      pkg.main,
+      pkg.module,
+    ];
     for (const c of candidates) {
       if (!c) continue;
       const fullPath = path.join(dir, c);
       if (fs.existsSync(fullPath) || fs.existsSync(fullPath + '.js')) {
         pkg['react-native'] = c;
         fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
-        console.log('FIXED ' + pkg.name + ': ' + rnField + ' -> ' + c + ' (fallback)');
+        console.log(
+          'FIXED ' + pkg.name + ': ' + rnField + ' -> ' + c + ' (fallback)',
+        );
         fixed++;
         break;
       }

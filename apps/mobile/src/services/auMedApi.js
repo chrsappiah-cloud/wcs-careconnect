@@ -12,11 +12,11 @@
  *  5. CSIRO Ontoserver (AU FHIR terminology) — SNOMED CT-AU lookups
  */
 
-const RXNORM_BASE = "https://rxnav.nlm.nih.gov/REST";
-const OPENFDA_BASE = "https://api.fda.gov";
-const ICD11_BASE = "https://id.who.int/icd";
-const HAPI_FHIR_BASE = "https://hapi.fhir.org/baseR4";
-const ONTOSERVER_BASE = "https://tx.dev.hl7.org.au/fhir";
+const RXNORM_BASE = 'https://rxnav.nlm.nih.gov/REST';
+const OPENFDA_BASE = 'https://api.fda.gov';
+const ICD11_BASE = 'https://id.who.int/icd';
+const HAPI_FHIR_BASE = 'https://hapi.fhir.org/baseR4';
+const ONTOSERVER_BASE = 'https://tx.dev.hl7.org.au/fhir';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -26,7 +26,7 @@ const DEFAULT_TIMEOUT = 12000;
 const MAX_QUERY_LENGTH = 200;
 
 function sanitizeQuery(query) {
-  if (typeof query !== "string") return "";
+  if (typeof query !== 'string') return '';
   return query.trim().slice(0, MAX_QUERY_LENGTH);
 }
 
@@ -36,14 +36,17 @@ function isPositiveInt(value) {
 
 async function fetchJSON(url, options = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), options.timeout || DEFAULT_TIMEOUT);
+  const timer = setTimeout(
+    () => controller.abort(),
+    options.timeout || DEFAULT_TIMEOUT,
+  );
 
   try {
     const res = await fetch(url, {
       ...options,
       signal: controller.signal,
       headers: {
-        Accept: "application/json",
+        Accept: 'application/json',
         ...options.headers,
       },
     });
@@ -52,8 +55,8 @@ async function fetchJSON(url, options = {}) {
     }
     return await res.json();
   } catch (err) {
-    if (err.name === "AbortError") {
-      throw new Error("Request timed out");
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out');
     }
     throw err;
   } finally {
@@ -73,7 +76,7 @@ export async function searchDrugs(query) {
   const q = sanitizeQuery(query);
   if (!q) return [];
   const data = await fetchJSON(
-    `${RXNORM_BASE}/drugs.json?name=${encodeURIComponent(q)}`
+    `${RXNORM_BASE}/drugs.json?name=${encodeURIComponent(q)}`,
   );
   const groups = data?.drugGroup?.conceptGroup || [];
   const results = [];
@@ -82,7 +85,7 @@ export async function searchDrugs(query) {
       results.push({
         rxcui: prop.rxcui,
         name: prop.name,
-        synonym: prop.synonym || "",
+        synonym: prop.synonym || '',
         tty: prop.tty,
       });
     }
@@ -94,15 +97,15 @@ export async function searchDrugs(query) {
 export async function getDrugByRxcui(rxcui) {
   if (!rxcui || !/^\d+$/.test(String(rxcui))) return null;
   const data = await fetchJSON(
-    `${RXNORM_BASE}/rxcui/${encodeURIComponent(rxcui)}/allrelated.json`
+    `${RXNORM_BASE}/rxcui/${encodeURIComponent(rxcui)}/allrelated.json`,
   );
   const groups = data?.allRelatedGroup?.conceptGroup || [];
   const info = { rxcui, brandNames: [], ingredients: [], doseForms: [] };
   for (const g of groups) {
     for (const p of g.conceptProperties || []) {
-      if (g.tty === "BN") info.brandNames.push(p.name);
-      else if (g.tty === "IN" || g.tty === "MIN") info.ingredients.push(p.name);
-      else if (g.tty === "DF") info.doseForms.push(p.name);
+      if (g.tty === 'BN') info.brandNames.push(p.name);
+      else if (g.tty === 'IN' || g.tty === 'MIN') info.ingredients.push(p.name);
+      else if (g.tty === 'DF') info.doseForms.push(p.name);
     }
   }
   return info;
@@ -116,7 +119,7 @@ export async function getDrugByRxcui(rxcui) {
 export async function checkDrugInteractions(drugs = []) {
   if (!Array.isArray(drugs) || drugs.length < 2) return [];
   // Accept either RxCUI strings or drug name strings
-  const names = drugs.map(d => sanitizeQuery(String(d))).filter(Boolean);
+  const names = drugs.map((d) => sanitizeQuery(String(d))).filter(Boolean);
   if (names.length < 2) return [];
 
   const interactions = [];
@@ -125,16 +128,16 @@ export async function checkDrugInteractions(drugs = []) {
     try {
       const q = encodeURIComponent(names[i]);
       const data = await fetchJSON(
-        `${OPENFDA_BASE}/drug/label.json?search=drug_interactions:"${q}"&limit=3`
+        `${OPENFDA_BASE}/drug/label.json?search=drug_interactions:"${q}"&limit=3`,
       );
       for (const result of data?.results || []) {
-        const interactionText = (result.drug_interactions || []).join(" ");
+        const interactionText = (result.drug_interactions || []).join(' ');
         // Check if any of the other selected drugs are mentioned
         for (let j = 0; j < names.length; j++) {
           if (i === j) continue;
           if (interactionText.toLowerCase().includes(names[j].toLowerCase())) {
             interactions.push({
-              severity: "N/A",
+              severity: 'N/A',
               description: interactionText.slice(0, 500),
               drugs: [names[i], names[j]],
             });
@@ -153,7 +156,7 @@ export async function suggestDrugSpelling(query) {
   const q = sanitizeQuery(query);
   if (!q) return [];
   const data = await fetchJSON(
-    `${RXNORM_BASE}/spellingsuggestions.json?name=${encodeURIComponent(q)}`
+    `${RXNORM_BASE}/spellingsuggestions.json?name=${encodeURIComponent(q)}`,
   );
   return data?.suggestionGroup?.suggestionList?.suggestion || [];
 }
@@ -169,16 +172,16 @@ export async function searchAdverseEvents(drugName, limit = 5) {
   if (!q) return [];
   const safeLimit = isPositiveInt(limit) ? Math.min(limit, 100) : 5;
   const data = await fetchJSON(
-    `${OPENFDA_BASE}/drug/event.json?search=patient.drug.medicinalproduct:"${encodeURIComponent(q)}"&limit=${safeLimit}`
+    `${OPENFDA_BASE}/drug/event.json?search=patient.drug.medicinalproduct:"${encodeURIComponent(q)}"&limit=${safeLimit}`,
   );
   return (data?.results || []).map((r) => ({
     safetyReportId: r.safetyreportid,
-    serious: r.serious === "1",
+    serious: r.serious === '1',
     seriousnessDescription: [
-      r.seriousnessdeath === "1" && "Death",
-      r.seriousnesslifethreatening === "1" && "Life-threatening",
-      r.seriousnesshospitalization === "1" && "Hospitalisation",
-      r.seriousnessdisabling === "1" && "Disability",
+      r.seriousnessdeath === '1' && 'Death',
+      r.seriousnesslifethreatening === '1' && 'Life-threatening',
+      r.seriousnesshospitalization === '1' && 'Hospitalisation',
+      r.seriousnessdisabling === '1' && 'Disability',
     ].filter(Boolean),
     reactions: (r.patient?.reaction || []).map((rx) => rx.reactionmeddrapt),
     drugs: (r.patient?.drug || []).map((d) => ({
@@ -196,7 +199,7 @@ export async function topAdverseReactions(drugName, limit = 10) {
   if (!q) return [];
   const safeLimit = isPositiveInt(limit) ? Math.min(limit, 100) : 10;
   const data = await fetchJSON(
-    `${OPENFDA_BASE}/drug/event.json?search=patient.drug.medicinalproduct:"${encodeURIComponent(q)}"&count=patient.reaction.reactionmeddrapt.exact&limit=${safeLimit}`
+    `${OPENFDA_BASE}/drug/event.json?search=patient.drug.medicinalproduct:"${encodeURIComponent(q)}"&count=patient.reaction.reactionmeddrapt.exact&limit=${safeLimit}`,
   );
   return (data?.results || []).map((r) => ({
     reaction: r.term,
@@ -225,11 +228,11 @@ export async function searchConditions(query) {
       `${ICD11_BASE}/release/11/2024-01/mms/search?q=${encodeURIComponent(q)}&subtreeFilterUsesFoundationDescendants=false&includeKeywordResult=false&flatResults=true&highlightingEnabled=false`,
       {
         headers: {
-          Accept: "application/json",
-          "Accept-Language": "en",
-          "API-Version": "v2",
+          Accept: 'application/json',
+          'Accept-Language': 'en',
+          'API-Version': 'v2',
         },
-      }
+      },
     );
     return (data?.destinationEntities || []).map((e) => ({
       id: e.id,
@@ -237,7 +240,7 @@ export async function searchConditions(query) {
       title: e.title,
       score: e.score,
       chapter: e.chapter,
-      source: "ICD-11",
+      source: 'ICD-11',
     }));
   } catch {
     // Fallback: search SNOMED CT clinical findings via Ontoserver
@@ -248,7 +251,7 @@ export async function searchConditions(query) {
       title: f.display,
       score: undefined,
       chapter: undefined,
-      source: "SNOMED-CT",
+      source: 'SNOMED-CT',
     }));
   }
 }
@@ -263,7 +266,7 @@ export async function searchFHIRPatients(name) {
   const q = sanitizeQuery(name);
   if (!q) return [];
   const data = await fetchJSON(
-    `${HAPI_FHIR_BASE}/Patient?name=${encodeURIComponent(q)}&_count=10&_format=json`
+    `${HAPI_FHIR_BASE}/Patient?name=${encodeURIComponent(q)}&_count=10&_format=json`,
   );
   return (data?.entry || []).map((e) => ({
     id: e.resource?.id,
@@ -278,7 +281,7 @@ export async function searchFHIRMedications(query) {
   const q = sanitizeQuery(query);
   if (!q) return [];
   const data = await fetchJSON(
-    `${HAPI_FHIR_BASE}/Medication?code:text=${encodeURIComponent(q)}&_count=10&_format=json`
+    `${HAPI_FHIR_BASE}/Medication?code:text=${encodeURIComponent(q)}&_count=10&_format=json`,
   );
   return (data?.entry || []).map((e) => ({
     id: e.resource?.id,
@@ -293,7 +296,7 @@ export async function searchFHIRObservations(code, count = 10) {
   if (!q) return [];
   const safeCount = isPositiveInt(count) ? Math.min(count, 100) : 10;
   const data = await fetchJSON(
-    `${HAPI_FHIR_BASE}/Observation?code=${encodeURIComponent(q)}&_count=${safeCount}&_sort=-date&_format=json`
+    `${HAPI_FHIR_BASE}/Observation?code=${encodeURIComponent(q)}&_count=${safeCount}&_sort=-date&_format=json`,
   );
   return (data?.entry || []).map((e) => {
     const r = e.resource;
@@ -309,9 +312,9 @@ export async function searchFHIRObservations(code, count = 10) {
 }
 
 function formatFHIRName(name) {
-  if (!name) return "Unknown";
-  const given = (name.given || []).join(" ");
-  return `${given} ${name.family || ""}`.trim();
+  if (!name) return 'Unknown';
+  const given = (name.given || []).join(' ');
+  return `${given} ${name.family || ''}`.trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -323,20 +326,20 @@ function formatFHIRName(name) {
 export async function lookupSNOMED(code) {
   if (!code || !/^\d+$/.test(String(code))) return null;
   const data = await fetchJSON(
-    `${ONTOSERVER_BASE}/CodeSystem/$lookup?system=http://snomed.info/sct&code=${encodeURIComponent(code)}&_format=json`
+    `${ONTOSERVER_BASE}/CodeSystem/$lookup?system=http://snomed.info/sct&code=${encodeURIComponent(code)}&_format=json`,
   );
   const params = data?.parameter || [];
   const result = {};
   for (const p of params) {
-    if (p.name === "display") result.display = p.valueString;
-    if (p.name === "name") result.codeSystem = p.valueString;
+    if (p.name === 'display') result.display = p.valueString;
+    if (p.name === 'name') result.codeSystem = p.valueString;
   }
   result.code = code;
   return result;
 }
 
 /** Expand a SNOMED CT-AU ValueSet (search within a set of concepts) */
-export async function expandValueSet(valueSetUrl, filter = "", count = 15) {
+export async function expandValueSet(valueSetUrl, filter = '', count = 15) {
   if (!valueSetUrl) return [];
   const safeCount = isPositiveInt(count) ? Math.min(count, 100) : 15;
   const safeFilter = sanitizeQuery(filter);
@@ -355,9 +358,9 @@ export async function searchSNOMEDFindings(query, count = 15) {
   const q = sanitizeQuery(query);
   if (!q) return [];
   return expandValueSet(
-    "http://snomed.info/sct?fhir_vs=isa/404684003",
+    'http://snomed.info/sct?fhir_vs=isa/404684003',
     q,
-    count
+    count,
   );
 }
 
@@ -368,16 +371,16 @@ export async function searchAMTMedications(query, count = 15) {
   if (!q) return [];
   // Try AMT first (AU extension)
   const amtResults = await expandValueSet(
-    "http://snomed.info/sct?fhir_vs=isa/30425011000036101",
+    'http://snomed.info/sct?fhir_vs=isa/30425011000036101',
     q,
-    count
+    count,
   );
   if (amtResults.length > 0) return amtResults;
   // Fallback: international SNOMED medicinal product hierarchy
   return expandValueSet(
-    "http://snomed.info/sct?fhir_vs=isa/763158003",
+    'http://snomed.info/sct?fhir_vs=isa/763158003',
     q,
-    count
+    count,
   );
 }
 
@@ -387,35 +390,35 @@ export async function searchAMTMedications(query, count = 15) {
 
 /** Common aged care conditions — pre-built SNOMED codes */
 export const AGED_CARE_CONDITIONS = [
-  { code: "26929004", display: "Alzheimer's disease" },
-  { code: "15188001", display: "Hearing loss" },
-  { code: "73211009", display: "Diabetes mellitus" },
-  { code: "38341003", display: "Hypertension" },
-  { code: "13645005", display: "Chronic obstructive lung disease" },
-  { code: "84757009", display: "Epilepsy" },
-  { code: "69896004", display: "Rheumatoid arthritis" },
-  { code: "64859006", display: "Osteoporosis" },
-  { code: "56717001", display: "Tuberculosis" },
-  { code: "22298006", display: "Myocardial infarction" },
-  { code: "230690007", display: "Stroke" },
-  { code: "35489007", display: "Depression" },
-  { code: "197480006", display: "Anxiety disorder" },
-  { code: "386806002", display: "Impaired cognition" },
-  { code: "129839007", display: "At risk of falls" },
+  { code: '26929004', display: "Alzheimer's disease" },
+  { code: '15188001', display: 'Hearing loss' },
+  { code: '73211009', display: 'Diabetes mellitus' },
+  { code: '38341003', display: 'Hypertension' },
+  { code: '13645005', display: 'Chronic obstructive lung disease' },
+  { code: '84757009', display: 'Epilepsy' },
+  { code: '69896004', display: 'Rheumatoid arthritis' },
+  { code: '64859006', display: 'Osteoporosis' },
+  { code: '56717001', display: 'Tuberculosis' },
+  { code: '22298006', display: 'Myocardial infarction' },
+  { code: '230690007', display: 'Stroke' },
+  { code: '35489007', display: 'Depression' },
+  { code: '197480006', display: 'Anxiety disorder' },
+  { code: '386806002', display: 'Impaired cognition' },
+  { code: '129839007', display: 'At risk of falls' },
 ];
 
 /** Common aged care medications — pre-built RxCUI codes */
 export const COMMON_MEDICATIONS = [
-  { rxcui: "6809", name: "Metformin" },
-  { rxcui: "1191", name: "Aspirin" },
-  { rxcui: "29046", name: "Lisinopril" },
-  { rxcui: "10582", name: "Atorvastatin" },
-  { rxcui: "83367", name: "Amlodipine" },
-  { rxcui: "7646", name: "Omeprazole" },
-  { rxcui: "161", name: "Paracetamol (Acetaminophen)" },
-  { rxcui: "3640", name: "Donepezil" },
-  { rxcui: "114979", name: "Memantine" },
-  { rxcui: "32968", name: "Warfarin" },
-  { rxcui: "4815", name: "Furosemide" },
-  { rxcui: "50166", name: "Clopidogrel" },
+  { rxcui: '6809', name: 'Metformin' },
+  { rxcui: '1191', name: 'Aspirin' },
+  { rxcui: '29046', name: 'Lisinopril' },
+  { rxcui: '10582', name: 'Atorvastatin' },
+  { rxcui: '83367', name: 'Amlodipine' },
+  { rxcui: '7646', name: 'Omeprazole' },
+  { rxcui: '161', name: 'Paracetamol (Acetaminophen)' },
+  { rxcui: '3640', name: 'Donepezil' },
+  { rxcui: '114979', name: 'Memantine' },
+  { rxcui: '32968', name: 'Warfarin' },
+  { rxcui: '4815', name: 'Furosemide' },
+  { rxcui: '50166', name: 'Clopidogrel' },
 ];

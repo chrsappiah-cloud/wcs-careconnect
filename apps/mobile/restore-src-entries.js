@@ -16,7 +16,7 @@ const packagesWithSrc = [
   'react-native-google-mobile-ads',
   'react-native-purchases-ui',
   'react-native-tree-multi-select',
-  'moti'
+  'moti',
 ];
 
 for (const name of packagesWithSrc) {
@@ -24,7 +24,7 @@ for (const name of packagesWithSrc) {
   try {
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
     const current = pkg['react-native'];
-    
+
     // Check what the src entry should be
     const dir = path.join(__dirname, 'node_modules', name);
     const exts = ['.ts', '.tsx', '.js', '.jsx'];
@@ -35,7 +35,7 @@ for (const name of packagesWithSrc) {
         break;
       }
     }
-    
+
     if (srcEntry && current !== srcEntry) {
       pkg['react-native'] = srcEntry;
       fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');

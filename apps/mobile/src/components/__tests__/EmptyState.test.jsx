@@ -20,7 +20,9 @@ describe('EmptyState', () => {
   });
 
   it('renders icon when provided', () => {
-    render(<EmptyState title="Empty" icon={<Text testID="test-icon">Icon</Text>} />);
+    render(
+      <EmptyState title="Empty" icon={<Text testID="test-icon">Icon</Text>} />,
+    );
     expect(screen.getByTestId('test-icon')).toBeTruthy();
   });
 

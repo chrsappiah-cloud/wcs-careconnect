@@ -20,7 +20,12 @@ describe('SectionHeader', () => {
   });
 
   it('renders right slot element', () => {
-    render(<SectionHeader title="Alerts" right={<Text testID="right-btn">View All</Text>} />);
+    render(
+      <SectionHeader
+        title="Alerts"
+        right={<Text testID="right-btn">View All</Text>}
+      />,
+    );
     expect(screen.getByTestId('right-btn')).toBeTruthy();
     expect(screen.getByText('View All')).toBeTruthy();
   });

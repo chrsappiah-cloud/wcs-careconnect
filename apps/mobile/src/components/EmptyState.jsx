@@ -4,7 +4,13 @@ import { colors, typography } from '../theme';
 
 export default function EmptyState({ icon, title, subtitle }) {
   return (
-    <View style={{ alignItems: 'center', paddingVertical: 60, paddingHorizontal: 32 }}>
+    <View
+      style={{
+        alignItems: 'center',
+        paddingVertical: 60,
+        paddingHorizontal: 32,
+      }}
+    >
       {icon && (
         <View
           style={{
@@ -20,7 +26,9 @@ export default function EmptyState({ icon, title, subtitle }) {
           {icon}
         </View>
       )}
-      <Text style={[typography.title3, { color: colors.text, textAlign: 'center' }]}>
+      <Text
+        style={[typography.title3, { color: colors.text, textAlign: 'center' }]}
+      >
         {title}
       </Text>
       {subtitle && (

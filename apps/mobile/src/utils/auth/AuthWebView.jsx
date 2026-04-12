@@ -11,7 +11,9 @@ const callbackQueryString = `callbackUrl=${callbackUrl}`;
  * This renders a WebView for authentication and handles both web and native platforms.
  */
 export const AuthWebView = ({ mode, proxyURL, baseURL }) => {
-  const [currentURI, setURI] = useState(`${baseURL}/account/${mode}?${callbackQueryString}`);
+  const [currentURI, setURI] = useState(
+    `${baseURL}/account/${mode}?${callbackQueryString}`,
+  );
   const { auth, setAuth, isReady } = useAuthStore();
   const isAuthenticated = isReady ? !!auth : null;
   const iframeRef = useRef(null);
@@ -19,7 +21,7 @@ export const AuthWebView = ({ mode, proxyURL, baseURL }) => {
     if (Platform.OS === 'web') {
       return;
     }
-    if (isAuthenticated) {
+    if (isAuthenticated && router.canGoBack()) {
       router.back();
     }
   }, [isAuthenticated]);
@@ -78,7 +80,8 @@ export const AuthWebView = ({ mode, proxyURL, baseURL }) => {
         uri: currentURI,
       }}
       headers={{
-        'x-createxyz-project-group-id': process.env.EXPO_PUBLIC_PROJECT_GROUP_ID,
+        'x-createxyz-project-group-id':
+          process.env.EXPO_PUBLIC_PROJECT_GROUP_ID,
         host: process.env.EXPO_PUBLIC_HOST,
         'x-forwarded-host': process.env.EXPO_PUBLIC_HOST,
         'x-createxyz-host': process.env.EXPO_PUBLIC_HOST,

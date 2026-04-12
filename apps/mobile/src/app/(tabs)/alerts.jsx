@@ -1,29 +1,29 @@
-import React, { useState } from "react";
+import React from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Animated,
-} from "react-native";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+} from 'react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   CheckCircle,
-  Clock,
   Bell,
+  Clock,
   Info,
   ShieldAlert,
   Zap,
-} from "lucide-react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { format, formatDistanceToNow } from "date-fns";
-import { colors, radius, shadows, typography } from "../../theme";
-import { mockAlerts } from "../../mockData";
-import Card from "../../components/Card";
-import EmptyState from "../../components/EmptyState";
-import { SkeletonList } from "../../components/Skeleton";
+} from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { format, formatDistanceToNow } from 'date-fns';
+import { colors, radius, shadows, typography } from '../../theme';
+import { mockAlerts } from '../../mockData';
+import Card from '../../components/Card';
+import EmptyState from '../../components/EmptyState';
+import { SkeletonList } from '../../components/Skeleton';
+import { apiUrl } from '../../services/apiClient';
 
 const SEVERITY_CONFIG = {
   critical: {
@@ -31,21 +31,21 @@ const SEVERITY_CONFIG = {
     bg: colors.dangerLight,
     darkText: colors.dangerDark,
     icon: ShieldAlert,
-    label: "CRITICAL",
+    label: 'CRITICAL',
   },
   warning: {
     color: colors.warning,
     bg: colors.warningLight,
     darkText: colors.warningDark,
     icon: AlertTriangle,
-    label: "WARNING",
+    label: 'WARNING',
   },
   info: {
     color: colors.severity.info,
-    bg: "#EFF6FF",
-    darkText: "#1E40AF",
+    bg: '#EFF6FF',
+    darkText: '#1E40AF',
     icon: Info,
-    label: "INFO",
+    label: 'INFO',
   },
 };
 
@@ -59,10 +59,11 @@ export default function AlertsScreen() {
     refetch,
     isRefetching,
   } = useQuery({
-    queryKey: ["alerts"],
+    queryKey: ['alerts'],
     queryFn: async () => {
-      const response = await fetch("/api/alerts?status=open");
-      if (!response.ok) throw new Error(`Alerts fetch failed: ${response.status}`);
+      const response = await fetch(apiUrl('/api/alerts?status=open'));
+      if (!response.ok)
+        throw new Error(`Alerts fetch failed: ${response.status}`);
       return response.json();
     },
     placeholderData: mockAlerts,
@@ -70,44 +71,55 @@ export default function AlertsScreen() {
 
   const ackMutation = useMutation({
     mutationFn: async (id) => {
-      const response = await fetch("/api/alerts", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch(apiUrl('/api/alerts'), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id,
-          status: "acknowledged",
-          acknowledged_by: "Nurse Sarah",
+          status: 'acknowledged',
+          acknowledged_by: 'Nurse Sarah',
         }),
       });
-      if (!response.ok) throw new Error(`Alert update failed: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`Alert update failed: ${response.status}`);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["alerts"] });
-      queryClient.invalidateQueries({ queryKey: ["residents"] });
+      queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['residents'] });
     },
   });
 
-  const criticalCount = alerts.filter((a) => a.severity === "critical").length;
-  const warningCount = alerts.filter((a) => a.severity === "warning").length;
+  const criticalCount = alerts.filter((a) => a.severity === 'critical').length;
+  const warningCount = alerts.filter((a) => a.severity === 'warning').length;
 
   return (
     <View
-      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingTop: insets.top,
+      }}
     >
       {/* Header */}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <Text style={[typography.largeTitle, { color: colors.text }]}>
             Alerts
           </Text>
           {alerts.length > 0 && (
-            <View style={{ flexDirection: "row", gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
               {criticalCount > 0 && (
                 <View
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
+                    flexDirection: 'row',
+                    alignItems: 'center',
                     backgroundColor: colors.dangerLight,
                     paddingHorizontal: 10,
                     paddingVertical: 5,
@@ -116,7 +128,13 @@ export default function AlertsScreen() {
                   }}
                 >
                   <Zap size={14} color={colors.danger} />
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: colors.danger }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '700',
+                      color: colors.danger,
+                    }}
+                  >
                     {criticalCount}
                   </Text>
                 </View>
@@ -124,8 +142,8 @@ export default function AlertsScreen() {
               {warningCount > 0 && (
                 <View
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
+                    flexDirection: 'row',
+                    alignItems: 'center',
                     backgroundColor: colors.warningLight,
                     paddingHorizontal: 10,
                     paddingVertical: 5,
@@ -134,7 +152,13 @@ export default function AlertsScreen() {
                   }}
                 >
                   <AlertTriangle size={14} color={colors.warning} />
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: colors.warningDark }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '700',
+                      color: colors.warningDark,
+                    }}
+                  >
                     {warningCount}
                   </Text>
                 </View>
@@ -142,16 +166,25 @@ export default function AlertsScreen() {
             </View>
           )}
         </View>
-        <Text style={[typography.callout, { color: colors.textTertiary, marginTop: 4, marginBottom: 8 }]}>
+        <Text
+          style={[
+            typography.callout,
+            { color: colors.textTertiary, marginTop: 4, marginBottom: 8 },
+          ]}
+        >
           {alerts.length > 0
-            ? `${alerts.length} active alert${alerts.length !== 1 ? "s" : ""} requiring attention`
-            : "No active alerts"}
+            ? `${alerts.length} active alert${alerts.length !== 1 ? 's' : ''} requiring attention`
+            : 'No active alerts'}
         </Text>
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 }}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingTop: 8,
+          paddingBottom: 40,
+        }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -176,7 +209,8 @@ export default function AlertsScreen() {
               return (order[a.severity] ?? 3) - (order[b.severity] ?? 3);
             })
             .map((alert) => {
-              const sev = SEVERITY_CONFIG[alert.severity] || SEVERITY_CONFIG.info;
+              const sev =
+                SEVERITY_CONFIG[alert.severity] || SEVERITY_CONFIG.info;
               const SevIcon = sev.icon;
 
               return (
@@ -187,24 +221,24 @@ export default function AlertsScreen() {
                       style={{
                         height: 4,
                         backgroundColor: sev.color,
-                        borderTopLeftRadius: radius["2xl"],
-                        borderTopRightRadius: radius["2xl"],
+                        borderTopLeftRadius: radius['2xl'],
+                        borderTopRightRadius: radius['2xl'],
                       }}
                     />
                     <View style={{ padding: 18 }}>
                       {/* Top row: severity badge + time */}
                       <View
                         style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "space-between",
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
                           marginBottom: 12,
                         }}
                       >
                         <View
                           style={{
-                            flexDirection: "row",
-                            alignItems: "center",
+                            flexDirection: 'row',
+                            alignItems: 'center',
                             backgroundColor: sev.bg,
                             paddingHorizontal: 10,
                             paddingVertical: 4,
@@ -216,7 +250,7 @@ export default function AlertsScreen() {
                           <Text
                             style={{
                               fontSize: 12,
-                              fontWeight: "800",
+                              fontWeight: '800',
                               color: sev.darkText,
                               letterSpacing: 0.8,
                             }}
@@ -224,9 +258,17 @@ export default function AlertsScreen() {
                             {sev.label}
                           </Text>
                         </View>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
                           <Clock size={13} color={colors.textMuted} />
-                          <Text style={{ fontSize: 13, color: colors.textMuted }}>
+                          <Text
+                            style={{ fontSize: 13, color: colors.textMuted }}
+                          >
                             {formatDistanceToNow(new Date(alert.created_at), {
                               addSuffix: true,
                             })}
@@ -238,7 +280,7 @@ export default function AlertsScreen() {
                       <Text
                         style={{
                           fontSize: 17,
-                          fontWeight: "700",
+                          fontWeight: '700',
                           color: colors.text,
                           marginBottom: 2,
                         }}
@@ -268,9 +310,9 @@ export default function AlertsScreen() {
                           backgroundColor: colors.text,
                           borderRadius: radius.md,
                           paddingVertical: 13,
-                          alignItems: "center",
-                          flexDirection: "row",
-                          justifyContent: "center",
+                          alignItems: 'center',
+                          flexDirection: 'row',
+                          justifyContent: 'center',
                           gap: 8,
                           opacity: ackMutation.isPending ? 0.6 : 1,
                         }}
@@ -280,7 +322,7 @@ export default function AlertsScreen() {
                           style={{
                             color: colors.textInverse,
                             fontSize: 15,
-                            fontWeight: "700",
+                            fontWeight: '700',
                           }}
                         >
                           Acknowledge

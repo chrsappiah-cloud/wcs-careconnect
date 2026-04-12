@@ -111,7 +111,7 @@
   },
   "jest": {
     "preset": "jest-expo",
-    "setupFilesAfterSetup": [
+    "setupFilesAfterEnv": [
       "./jest.setup.js"
     ],
     "transformIgnorePatterns": [
