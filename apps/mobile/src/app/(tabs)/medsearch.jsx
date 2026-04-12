@@ -7,6 +7,9 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Modal,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -86,6 +89,8 @@ export default function MedSearchScreen() {
     (activeTab === 'snomed' && snomedLoading) ||
     (activeTab === 'amt' && amtLoading) ||
     (activeTab === 'fhir' && fhirLoading);
+
+  const [detailModal, setDetailModal] = useState(null);
 
   return (
     <View
@@ -322,21 +327,28 @@ export default function MedSearchScreen() {
                 key={item.code || i}
                 activeOpacity={0.7}
                 onPress={async () => {
+                  setDetailModal({
+                    type: 'snomed',
+                    title: item.display,
+                    code: item.code,
+                    loading: true,
+                  });
                   try {
                     const detail = await lookupSNOMED(item.code);
-                    Alert.alert(
-                      item.display,
-                      [
-                        `SNOMED CT ID: ${item.code}`,
-                        detail?.display && `Display: ${detail.display}`,
-                        detail?.codeSystem &&
-                          `Code System: ${detail.codeSystem}`,
-                      ]
-                        .filter(Boolean)
-                        .join('\n\n'),
-                    );
+                    setDetailModal({
+                      type: 'snomed',
+                      title: item.display,
+                      code: item.code,
+                      detail,
+                      loading: false,
+                    });
                   } catch {
-                    Alert.alert(item.display, `SNOMED CT ID: ${item.code}`);
+                    setDetailModal({
+                      type: 'snomed',
+                      title: item.display,
+                      code: item.code,
+                      loading: false,
+                    });
                   }
                 }}
               >
@@ -487,16 +499,13 @@ export default function MedSearchScreen() {
                 key={patient.id || i}
                 activeOpacity={0.7}
                 onPress={() =>
-                  Alert.alert(
-                    patient.name || 'Patient',
-                    [
-                      patient.gender && `Gender: ${patient.gender}`,
-                      patient.birthDate && `DOB: ${patient.birthDate}`,
-                      `FHIR ID: ${patient.id}`,
-                    ]
-                      .filter(Boolean)
-                      .join('\n'),
-                  )
+                  setDetailModal({
+                    type: 'fhir',
+                    title: patient.name || 'Patient',
+                    id: patient.id,
+                    gender: patient.gender,
+                    birthDate: patient.birthDate,
+                  })
                 }
               >
                 <Card style={{ marginBottom: 8 }}>
@@ -653,6 +662,121 @@ export default function MedSearchScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Detail Modal */}
+      <Modal
+        visible={!!detailModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setDetailModal(null)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setDetailModal(null)}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: 24,
+              paddingBottom: insets.bottom + 24,
+              maxHeight: '60%',
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  backgroundColor: detailModal?.type === 'snomed' ? colors.successLight : colors.primaryLight,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 12,
+                }}
+              >
+                {detailModal?.type === 'snomed' ? (
+                  <Microscope size={20} color={colors.success} />
+                ) : (
+                  <Database size={20} color={colors.primary} />
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.headline, { color: colors.text }]}>
+                  {detailModal?.title}
+                </Text>
+                <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
+                  {detailModal?.type === 'snomed' ? 'SNOMED CT-AU Finding' : 'FHIR R4 Patient'}
+                </Text>
+              </View>
+            </View>
+
+            {detailModal?.loading && (
+              <ActivityIndicator size="small" color={colors.primary} style={{ marginBottom: 16 }} />
+            )}
+
+            {detailModal?.type === 'snomed' && (
+              <View style={{ gap: 12 }}>
+                <DetailRow label="SNOMED CT ID" value={detailModal.code} />
+                {detailModal.detail?.display && (
+                  <DetailRow label="Display Term" value={detailModal.detail.display} />
+                )}
+                {detailModal.detail?.codeSystem && (
+                  <DetailRow label="Code System" value={detailModal.detail.codeSystem} />
+                )}
+                {detailModal.detail?.version && (
+                  <DetailRow label="Version" value={detailModal.detail.version} />
+                )}
+              </View>
+            )}
+
+            {detailModal?.type === 'fhir' && (
+              <View style={{ gap: 12 }}>
+                <DetailRow label="FHIR ID" value={detailModal.id} />
+                {detailModal.gender && <DetailRow label="Gender" value={detailModal.gender} />}
+                {detailModal.birthDate && <DetailRow label="Date of Birth" value={detailModal.birthDate} />}
+                <DetailRow label="Source" value="HAPI FHIR R4 (Sandbox)" />
+              </View>
+            )}
+
+            <TouchableOpacity
+              onPress={() => setDetailModal(null)}
+              style={{
+                marginTop: 24,
+                padding: 16,
+                borderRadius: radius.lg,
+                backgroundColor: colors.primary,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textInverse }}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <View
+      style={{
+        backgroundColor: colors.surfaceSecondary,
+        borderRadius: radius.lg,
+        padding: 14,
+      }}
+    >
+      <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: 4 }]}>
+        {label}
+      </Text>
+      <Text style={[typography.subhead, { color: colors.text }]} selectable>
+        {value}
+      </Text>
     </View>
   );
 }

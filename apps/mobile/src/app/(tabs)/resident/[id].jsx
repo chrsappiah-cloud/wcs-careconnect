@@ -1,5 +1,15 @@
-import React, { useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -157,6 +167,46 @@ export default function ResidentDetailScreen() {
       Alert.alert('Error', 'Failed to update task. Please try again.');
     },
   });
+
+  const addTaskMutation = useMutation({
+    mutationFn: async (task) => {
+      const response = await fetch(apiUrl('/api/tasks'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...task, resident_id: id, status: 'pending' }),
+      });
+      if (!response.ok)
+        throw new Error(`Task creation failed: ${response.status}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      Alert.alert('Task Created', 'New task added successfully.');
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to create task. Please try again.');
+    },
+  });
+
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDescription, setNewTaskDescription] = useState('');
+
+  const handleCreateTask = useCallback(() => {
+    if (!newTaskTitle.trim()) {
+      Alert.alert('Validation', 'Please enter a task title.');
+      return;
+    }
+    addTaskMutation.mutate({
+      title: newTaskTitle.trim(),
+      description: newTaskDescription.trim(),
+      due_date: new Date().toISOString(),
+    });
+    setShowAddTask(false);
+    setNewTaskTitle('');
+    setNewTaskDescription('');
+  }, [newTaskTitle, newTaskDescription, addTaskMutation]);
 
   const simulateBLEReading = useCallback(() => {
     const metrics = ['glucose', 'hr', 'spo2', 'bp_systolic'];
@@ -402,23 +452,7 @@ export default function ResidentDetailScreen() {
             right={
               <TouchableOpacity
                 hitSlop={8}
-                onPress={() =>
-                  Alert.alert(
-                    'Add Task',
-                    'Create a new task for this resident?',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Add',
-                        onPress: () =>
-                          Alert.alert(
-                            'Coming Soon',
-                            'Task creation will be available in a future update.',
-                          ),
-                      },
-                    ],
-                  )
-                }
+                onPress={() => setShowAddTask(true)}
                 style={{
                   width: 30,
                   height: 30,
@@ -501,6 +535,150 @@ export default function ResidentDetailScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Add Task Modal */}
+      <Modal
+        visible={showAddTask}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowAddTask(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1, justifyContent: 'flex-end' }}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setShowAddTask(false)}
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
+          />
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: 24,
+              paddingBottom: insets.bottom + 24,
+            }}
+          >
+            <Text
+              style={[
+                typography.title2,
+                { color: colors.text, marginBottom: 20 },
+              ]}
+            >
+              New Task for {resident.name}
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: '600',
+                color: colors.textTertiary,
+                marginBottom: 6,
+              }}
+            >
+              TITLE
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: colors.surfaceBorder,
+                borderRadius: radius.lg,
+                padding: 14,
+                fontSize: 16,
+                color: colors.text,
+                backgroundColor: colors.background,
+                marginBottom: 16,
+              }}
+              placeholder="e.g. Administer morning medication"
+              placeholderTextColor={colors.textMuted}
+              value={newTaskTitle}
+              onChangeText={setNewTaskTitle}
+              autoFocus
+            />
+
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: '600',
+                color: colors.textTertiary,
+                marginBottom: 6,
+              }}
+            >
+              DESCRIPTION (optional)
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: colors.surfaceBorder,
+                borderRadius: radius.lg,
+                padding: 14,
+                fontSize: 16,
+                color: colors.text,
+                backgroundColor: colors.background,
+                marginBottom: 24,
+                minHeight: 80,
+                textAlignVertical: 'top',
+              }}
+              placeholder="Additional details..."
+              placeholderTextColor={colors.textMuted}
+              value={newTaskDescription}
+              onChangeText={setNewTaskDescription}
+              multiline
+            />
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowAddTask(false);
+                  setNewTaskTitle('');
+                  setNewTaskDescription('');
+                }}
+                style={{
+                  flex: 1,
+                  padding: 16,
+                  borderRadius: radius.lg,
+                  backgroundColor: colors.surfaceSecondary,
+                  alignItems: 'center',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '600',
+                    color: colors.textSecondary,
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleCreateTask}
+                style={{
+                  flex: 1,
+                  padding: 16,
+                  borderRadius: radius.lg,
+                  backgroundColor: colors.primary,
+                  alignItems: 'center',
+                  opacity: addTaskMutation.isPending ? 0.6 : 1,
+                }}
+                disabled={addTaskMutation.isPending}
+              >
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '600',
+                    color: colors.textInverse,
+                  }}
+                >
+                  {addTaskMutation.isPending ? 'Creating...' : 'Create Task'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }

@@ -7,6 +7,10 @@ import {
   Switch,
   Alert,
   Linking,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -89,6 +93,20 @@ export default function SettingsScreen() {
   const userName = auth?.user?.name || 'Nurse Sarah';
   const userRole = auth?.user?.role || 'Ward A • Head Nurse';
 
+  const [showProfile, setShowProfile] = useState(false);
+  const [editName, setEditName] = useState(userName);
+  const [editRole, setEditRole] = useState(userRole);
+
+  const handleSaveProfile = useCallback(() => {
+    // Persist profile to AsyncStorage
+    AsyncStorage.setItem(
+      '@careconnect_profile',
+      JSON.stringify({ name: editName.trim(), role: editRole.trim() }),
+    );
+    Alert.alert('Profile Updated', 'Your profile has been saved.');
+    setShowProfile(false);
+  }, [editName, editRole]);
+
   return (
     <View
       style={{
@@ -120,12 +138,11 @@ export default function SettingsScreen() {
         {/* Profile Card */}
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() =>
-            Alert.alert(
-              'Profile',
-              `${userName}\n${userRole}\n\nProfile editing coming soon.`,
-            )
-          }
+          onPress={() => {
+            setEditName(userName);
+            setEditRole(userRole);
+            setShowProfile(true);
+          }}
         >
           <Card variant="elevated" style={{ marginBottom: 24 }}>
             <View
@@ -259,6 +276,140 @@ export default function SettingsScreen() {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Profile Edit Modal */}
+      <Modal
+        visible={showProfile}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowProfile(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1, justifyContent: 'flex-end' }}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setShowProfile(false)}
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
+          />
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: 24,
+              paddingBottom: insets.bottom + 24,
+            }}
+          >
+            <Text
+              style={[
+                typography.title2,
+                { color: colors.text, marginBottom: 20 },
+              ]}
+            >
+              Edit Profile
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: '600',
+                color: colors.textTertiary,
+                marginBottom: 6,
+              }}
+            >
+              NAME
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: colors.surfaceBorder,
+                borderRadius: radius.lg,
+                padding: 14,
+                fontSize: 16,
+                color: colors.text,
+                backgroundColor: colors.background,
+                marginBottom: 16,
+              }}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Your name"
+              placeholderTextColor={colors.textMuted}
+            />
+
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: '600',
+                color: colors.textTertiary,
+                marginBottom: 6,
+              }}
+            >
+              ROLE
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: colors.surfaceBorder,
+                borderRadius: radius.lg,
+                padding: 14,
+                fontSize: 16,
+                color: colors.text,
+                backgroundColor: colors.background,
+                marginBottom: 24,
+              }}
+              value={editRole}
+              onChangeText={setEditRole}
+              placeholder="Your role"
+              placeholderTextColor={colors.textMuted}
+            />
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => setShowProfile(false)}
+                style={{
+                  flex: 1,
+                  padding: 16,
+                  borderRadius: radius.lg,
+                  backgroundColor: colors.surfaceSecondary,
+                  alignItems: 'center',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '600',
+                    color: colors.textSecondary,
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSaveProfile}
+                style={{
+                  flex: 1,
+                  padding: 16,
+                  borderRadius: radius.lg,
+                  backgroundColor: colors.primary,
+                  alignItems: 'center',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '600',
+                    color: colors.textInverse,
+                  }}
+                >
+                  Save
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
