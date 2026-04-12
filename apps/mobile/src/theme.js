@@ -3,11 +3,13 @@ export const colors = {
   primaryLight: '#EFF6FF',
   primaryBorder: '#BFDBFE',
   primaryDark: '#1D4ED8',
+  primaryMuted: '#93BBFD',
 
   background: '#F8F9FE',
   surface: '#FFFFFF',
   surfaceBorder: '#E8ECF4',
   surfaceSecondary: '#F1F3F8',
+  surfaceTertiary: '#E8EDF5',
 
   text: '#0F172A',
   textSecondary: '#334155',
@@ -34,11 +36,21 @@ export const colors = {
   heart: '#DC2626',
   heartBg: '#FFF1F2',
 
+  // Glass / frosted glass
+  glass: {
+    white: 'rgba(255,255,255,0.72)',
+    whiteBorder: 'rgba(255,255,255,0.25)',
+    dark: 'rgba(15,23,42,0.65)',
+    darkBorder: 'rgba(255,255,255,0.08)',
+    tint: 'rgba(37,99,235,0.08)',
+    overlay: 'rgba(0,0,0,0.45)',
+  },
+
   vitals: {
-    glucose: { color: '#EF4444', bg: '#FEF2F2' },
-    hr: { color: '#DC2626', bg: '#FFF1F2' },
-    spo2: { color: '#2563EB', bg: '#EFF6FF' },
-    bp: { color: '#7C3AED', bg: '#F5F3FF' },
+    glucose: { color: '#EF4444', bg: '#FEF2F2', gradient: ['#FEF2F2', '#FEE2E2'] },
+    hr: { color: '#DC2626', bg: '#FFF1F2', gradient: ['#FFF1F2', '#FEE2E2'] },
+    spo2: { color: '#2563EB', bg: '#EFF6FF', gradient: ['#EFF6FF', '#DBEAFE'] },
+    bp: { color: '#7C3AED', bg: '#F5F3FF', gradient: ['#F5F3FF', '#EDE9FE'] },
   },
 
   status: {
@@ -62,24 +74,38 @@ export const colors = {
 // Gradient presets for premium iOS-style headers and cards
 export const gradients = {
   primary: ['#2563EB', '#3B82F6', '#60A5FA'],
+  primaryReverse: ['#60A5FA', '#3B82F6', '#2563EB'],
   header: ['#1E40AF', '#2563EB'],
+  headerVibrant: ['#1E3A8A', '#1E40AF', '#2563EB'],
   success: ['#16A34A', '#22C55E'],
   danger: ['#DC2626', '#EF4444'],
+  dangerVibrant: ['#991B1B', '#DC2626', '#EF4444'],
   warning: ['#D97706', '#F59E0B'],
   card: ['#FFFFFF', '#F8FAFC'],
+  cardSubtle: ['#FAFBFF', '#F1F5F9'],
   vitalsGlucose: ['#FEF2F2', '#FFFFFF'],
   vitalsHr: ['#FFF1F2', '#FFFFFF'],
   vitalsSpo2: ['#EFF6FF', '#FFFFFF'],
   vitalsBp: ['#F5F3FF', '#FFFFFF'],
   background: ['#F0F4FF', '#F8F9FE', '#FFFFFF'],
+  shimmer: ['#E2E8F0', '#F1F5F9', '#E2E8F0'],
+  glass: ['rgba(255,255,255,0.85)', 'rgba(255,255,255,0.65)'],
+  dark: ['#0F172A', '#1E293B'],
+  aurora: ['#1E40AF', '#7C3AED', '#EC4899'],
+  sunset: ['#F59E0B', '#EF4444', '#EC4899'],
+  ocean: ['#0EA5E9', '#2563EB', '#4F46E5'],
+  mint: ['#10B981', '#06B6D4'],
 };
 
 // Animation tokens for consistent motion
 export const animation = {
   spring: { damping: 15, stiffness: 150, mass: 0.8 },
   springBouncy: { damping: 12, stiffness: 180, mass: 0.6 },
-  duration: { fast: 150, normal: 250, slow: 400 },
+  springSnappy: { damping: 20, stiffness: 300, mass: 0.5 },
+  springGentle: { damping: 20, stiffness: 100, mass: 1 },
+  duration: { fast: 150, normal: 250, slow: 400, slower: 600 },
   pressScale: 0.97,
+  stagger: 50,
 };
 
 export const spacing = {
@@ -156,4 +182,18 @@ export const shadows = {
     shadowRadius: 12,
     elevation: 4,
   }),
+  glow: (color) => ({
+    shadowColor: color,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 6,
+  }),
+  depth: {
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 32,
+    elevation: 12,
+  },
 };

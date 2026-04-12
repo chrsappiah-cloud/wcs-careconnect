@@ -5,6 +5,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -18,11 +19,12 @@ import {
   Info,
   Pill,
 } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, shadows, typography, gradients } from '../../theme';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
 import AnimatedPressable from '../../components/AnimatedPressable';
-import GradientHeader from '../../components/GradientHeader';
 import haptic from '../../utils/haptics';
 import {
   checkDrugInteractions,
@@ -52,6 +54,7 @@ function getSeverityStyle(severity) {
 }
 
 export default function InteractionsScreen() {
+  const insets = useSafeAreaInsets();
   const [selectedMeds, setSelectedMeds] = useState([]);
   const [showPicker, setShowPicker] = useState(false);
 
@@ -93,10 +96,28 @@ export default function InteractionsScreen() {
       }}
     >
       {/* Header */}
-      <GradientHeader
-        title="Interactions"
-        subtitle="Check drug-drug interactions via OpenFDA labels"
-      />
+      <LinearGradient
+        colors={gradients.headerVibrant}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          paddingTop: insets.top + 8,
+          paddingBottom: 20,
+          paddingHorizontal: 20,
+        }}
+      >
+        <Text style={[typography.largeTitle, { color: colors.textInverse }]}>
+          Interactions
+        </Text>
+        <Text
+          style={[
+            typography.footnote,
+            { color: 'rgba(255,255,255,0.7)', marginTop: 4 },
+          ]}
+        >
+          Check drug-drug interactions via OpenFDA labels
+        </Text>
+      </LinearGradient>
 
       <ScrollView
         style={{ flex: 1 }}
@@ -136,8 +157,9 @@ export default function InteractionsScreen() {
                 paddingLeft: 14,
                 paddingRight: 6,
                 paddingVertical: 8,
-                borderWidth: 1,
+                borderWidth: 1.5,
                 borderColor: colors.primaryBorder,
+                ...shadows.sm,
               }}
             >
               <Pill size={14} color={colors.primary} />
@@ -318,25 +340,36 @@ export default function InteractionsScreen() {
                         style={{
                           flexDirection: 'row',
                           alignItems: 'center',
-                          backgroundColor: style.bg,
-                          paddingHorizontal: 10,
-                          paddingVertical: 4,
+                          overflow: 'hidden',
                           borderRadius: radius.full,
                         }}
                       >
-                        <Icon size={14} color={style.color} />
-                        <Text
-                          style={[
-                            typography.caption,
-                            {
-                              color: style.color,
-                              marginLeft: 4,
-                              fontWeight: '700',
-                            },
-                          ]}
+                        <LinearGradient
+                          colors={style.color === colors.dangerDark ? gradients.dangerVibrant : gradients.warning}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingHorizontal: 12,
+                            paddingVertical: 5,
+                            borderRadius: radius.full,
+                          }}
                         >
-                          {style.label}
-                        </Text>
+                          <Icon size={14} color={colors.textInverse} />
+                          <Text
+                            style={[
+                              typography.caption,
+                              {
+                                color: colors.textInverse,
+                                marginLeft: 4,
+                                fontWeight: '700',
+                              },
+                            ]}
+                          >
+                            {style.label}
+                          </Text>
+                        </LinearGradient>
                       </View>
                     </View>
 
@@ -407,7 +440,7 @@ export default function InteractionsScreen() {
             <Text
               style={[
                 typography.headline,
-                { color: colors.text, marginTop: 12, textAlign: 'center' },
+                { color: colors.text, marginTop: 12, textAlign: 'center', fontWeight: '700' },
               ]}
             >
               No Known Interactions

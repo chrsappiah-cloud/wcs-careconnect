@@ -286,8 +286,8 @@ describe('Tasks — rendering and toggle', () => {
       error: null,
     });
 
-    const { getByText } = render(<TasksScreen />, { wrapper: Wrapper });
-    expect(getByText(/no tasks/i)).toBeTruthy();
+    const { getAllByText } = render(<TasksScreen />, { wrapper: Wrapper });
+    expect(getAllByText(/no tasks/i).length).toBeGreaterThan(0);
   });
 });
 

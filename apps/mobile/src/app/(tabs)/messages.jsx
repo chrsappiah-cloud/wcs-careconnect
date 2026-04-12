@@ -5,11 +5,13 @@ import {
   ScrollView,
   TextInput,
   Animated,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Send, MessageCircle } from 'lucide-react-native';
+import { Send, MessageCircle, Sparkles } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { format } from 'date-fns';
 import KeyboardAvoidingAnimatedView from '@/components/KeyboardAvoidingAnimatedView';
 import { colors, radius, shadows, typography, gradients, animation } from '../../theme';
@@ -88,23 +90,26 @@ export default function MessagesScreen() {
       <View style={{ flex: 1 }}>
         {/* Gradient Header */}
         <LinearGradient
-          colors={gradients.header}
+          colors={gradients.headerVibrant}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{
             paddingTop: insets.top + 8,
             paddingHorizontal: 20,
-            paddingBottom: 16,
+            paddingBottom: 18,
           }}
         >
           <Text style={[typography.title2, { color: colors.textInverse }]}>
             Care Team
           </Text>
+          <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>
+            Secure clinical messaging
+          </Text>
           <View
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              marginTop: 8,
+              marginTop: 10,
               gap: 12,
             }}
           >
@@ -114,20 +119,22 @@ export default function MessagesScreen() {
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 4,
+                  gap: 5,
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: radius.full,
                 }}
               >
                 <View
                   style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
+                    width: 7,
+                    height: 7,
+                    borderRadius: 3.5,
                     backgroundColor: config.text,
-                    borderWidth: 1.5,
-                    borderColor: 'rgba(255,255,255,0.3)',
                   }}
                 />
-                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>
                   {role}
                 </Text>
               </View>
@@ -232,14 +239,14 @@ export default function MessagesScreen() {
                     {/* Message bubble */}
                     {own ? (
                       <LinearGradient
-                        colors={gradients.primary}
+                        colors={['#1E40AF', '#2563EB', '#3B82F6']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={{
-                          borderRadius: 18,
+                          borderRadius: 20,
                           borderTopRightRadius: 6,
-                          paddingHorizontal: 14,
-                          paddingVertical: 10,
+                          paddingHorizontal: 16,
+                          paddingVertical: 11,
                           ...shadows.colored(colors.primary),
                         }}
                       >
@@ -257,10 +264,10 @@ export default function MessagesScreen() {
                       <View
                         style={{
                           backgroundColor: colors.surface,
-                          borderRadius: 18,
+                          borderRadius: 20,
                           borderTopLeftRadius: 6,
-                          paddingHorizontal: 14,
-                          paddingVertical: 10,
+                          paddingHorizontal: 16,
+                          paddingVertical: 11,
                           borderWidth: 1,
                           borderColor: colors.surfaceBorder,
                           ...shadows.sm,
@@ -296,54 +303,68 @@ export default function MessagesScreen() {
           )}
         </ScrollView>
 
-        {/* Input Bar */}
+        {/* Glass Input Bar */}
         <View
           style={{
             paddingHorizontal: 16,
             paddingTop: 10,
             paddingBottom: 12,
-            backgroundColor: colors.surface,
-            borderTopWidth: 1,
-            borderColor: colors.borderLight,
+            backgroundColor: Platform.OS === 'ios' ? 'rgba(255,255,255,0.85)' : colors.surface,
+            borderTopWidth: 0.5,
+            borderColor: 'rgba(0,0,0,0.06)',
             flexDirection: 'row',
             alignItems: 'flex-end',
             gap: 10,
+            ...shadows.sm,
           }}
         >
-          <TextInput
-            placeholder="Type a message..."
-            placeholderTextColor={colors.textMuted}
-            value={content}
-            onChangeText={setContent}
-            multiline
+          <View
             style={{
               flex: 1,
               backgroundColor: colors.surfaceSecondary,
-              borderRadius: 22,
-              paddingHorizontal: 18,
-              paddingTop: 12,
-              paddingBottom: 12,
-              fontSize: 16,
-              color: colors.text,
-              maxHeight: 100,
-              minHeight: 44,
+              borderRadius: 24,
+              borderWidth: 1,
+              borderColor: colors.borderLight,
+              overflow: 'hidden',
             }}
-          />
+          >
+            <TextInput
+              placeholder="Type a message..."
+              placeholderTextColor={colors.textMuted}
+              value={content}
+              onChangeText={setContent}
+              multiline
+              style={{
+                paddingHorizontal: 18,
+                paddingTop: 12,
+                paddingBottom: 12,
+                fontSize: 16,
+                color: colors.text,
+                maxHeight: 100,
+                minHeight: 44,
+              }}
+            />
+          </View>
           <AnimatedPressable
             onPress={handleSend}
             disabled={!content.trim()}
             hapticType="medium"
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: content.trim() ? colors.primary : colors.divider,
-              alignItems: 'center',
-              justifyContent: 'center',
-              ...(content.trim() ? shadows.colored(colors.primary) : shadows.sm),
-            }}
           >
-            <Send size={20} color={colors.textInverse} />
+            <LinearGradient
+              colors={content.trim() ? gradients.primary : [colors.divider, colors.divider]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: 23,
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...(content.trim() ? shadows.colored(colors.primary) : {}),
+              }}
+            >
+              <Send size={20} color={colors.textInverse} />
+            </LinearGradient>
           </AnimatedPressable>
         </View>
       </View>

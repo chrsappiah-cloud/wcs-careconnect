@@ -23,11 +23,11 @@ import {
   Database,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, shadows, typography, gradients } from '../../theme';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
 import AnimatedPressable from '../../components/AnimatedPressable';
-import GradientHeader from '../../components/GradientHeader';
 import { haptic } from '../../utils/haptics';
 import {
   searchConditions,
@@ -102,10 +102,28 @@ export default function MedSearchScreen() {
       }}
     >
       {/* Header */}
-      <GradientHeader
-        title="Medical Search"
-        subtitle="WHO ICD-11 · SNOMED CT-AU · AMT · FHIR R4"
-      />
+      <LinearGradient
+        colors={gradients.headerVibrant}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          paddingTop: insets.top + 8,
+          paddingBottom: 20,
+          paddingHorizontal: 20,
+        }}
+      >
+        <Text style={[typography.largeTitle, { color: colors.textInverse }]}>
+          Medical Search
+        </Text>
+        <Text
+          style={[
+            typography.footnote,
+            { color: 'rgba(255,255,255,0.7)', marginTop: 4 },
+          ]}
+        >
+          WHO ICD-11 · SNOMED CT-AU · AMT · FHIR R4
+        </Text>
+      </LinearGradient>
 
       {/* Tab bar */}
       <ScrollView
@@ -132,15 +150,23 @@ export default function MedSearchScreen() {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: active ? colors.primary : colors.surface,
                 borderRadius: radius.full,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
-                borderWidth: active ? 0 : 1,
-                borderColor: colors.surfaceBorder,
-                ...(!active ? shadows.sm : {}),
+                overflow: 'hidden',
+                ...(active
+                  ? shadows.colored(colors.primary)
+                  : { borderWidth: 1, borderColor: colors.surfaceBorder, backgroundColor: colors.surface, ...shadows.sm }),
               }}
             >
+              {active && (
+                <LinearGradient
+                  colors={gradients.primary}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                />
+              )}
               <Icon
                 size={16}
                 color={active ? colors.textInverse : colors.textTertiary}
@@ -168,13 +194,13 @@ export default function MedSearchScreen() {
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: colors.surface,
-            borderRadius: radius.lg,
-            paddingHorizontal: 14,
-            height: 48,
+            backgroundColor: Platform.OS === 'ios' ? 'rgba(255,255,255,0.9)' : colors.surface,
+            borderRadius: radius.xl,
+            paddingHorizontal: 16,
+            height: 52,
             borderWidth: 1,
-            borderColor: colors.surfaceBorder,
-            ...shadows.sm,
+            borderColor: colors.primaryBorder,
+            ...shadows.md,
           }}
         >
           <Search size={20} color={colors.textMuted} />
@@ -236,16 +262,19 @@ export default function MedSearchScreen() {
                 >
                   <View
                     style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 12,
-                      backgroundColor: colors.vitals.bp.bg,
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      width: 42,
+                      height: 42,
+                      borderRadius: 14,
+                      overflow: 'hidden',
                       marginRight: 12,
                     }}
                   >
-                    <BookOpen size={18} color={colors.vitals.bp.color} />
+                    <LinearGradient
+                      colors={['#F5F3FF', '#EDE9FE']}
+                      style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <BookOpen size={18} color={colors.vitals.bp.color} />
+                    </LinearGradient>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[typography.subhead, { color: colors.text }]}>
@@ -352,16 +381,19 @@ export default function MedSearchScreen() {
                   >
                     <View
                       style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 12,
-                        backgroundColor: colors.successLight,
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        width: 42,
+                        height: 42,
+                        borderRadius: 14,
+                        overflow: 'hidden',
                         marginRight: 12,
                       }}
                     >
-                      <Microscope size={18} color={colors.success} />
+                      <LinearGradient
+                        colors={['#DCFCE7', '#BBF7D0']}
+                        style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <Microscope size={18} color={colors.success} />
+                      </LinearGradient>
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text
@@ -428,13 +460,16 @@ export default function MedSearchScreen() {
                       width: 40,
                       height: 40,
                       borderRadius: 12,
-                      backgroundColor: colors.heartBg,
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      overflow: 'hidden',
                       marginRight: 12,
                     }}
                   >
-                    <Heart size={18} color={colors.heart} />
+                    <LinearGradient
+                      colors={['#FFF1F2', '#FEE2E2']}
+                      style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Heart size={18} color={colors.heart} />
+                    </LinearGradient>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[typography.subhead, { color: colors.text }]}>
@@ -605,11 +640,11 @@ export default function MedSearchScreen() {
                     hapticType="selection"
                     style={{
                       backgroundColor: colors.surface,
-                      borderWidth: 1,
-                      borderColor: colors.surfaceBorder,
+                      borderWidth: 1.5,
+                      borderColor: colors.primaryBorder,
                       borderRadius: radius.full,
-                      paddingHorizontal: 14,
-                      paddingVertical: 10,
+                      paddingHorizontal: 16,
+                      paddingVertical: 11,
                       ...shadows.sm,
                     }}
                   >
@@ -740,15 +775,25 @@ export default function MedSearchScreen() {
               hapticType="light"
               style={{
                 marginTop: 24,
-                padding: 16,
-                borderRadius: radius.lg,
-                backgroundColor: colors.primary,
-                alignItems: 'center',
+                borderRadius: radius.xl,
+                overflow: 'hidden',
               }}
             >
-              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textInverse }}>
-                Close
-              </Text>
+              <LinearGradient
+                colors={gradients.primary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{
+                  padding: 16,
+                  borderRadius: radius.xl,
+                  alignItems: 'center',
+                  ...shadows.colored(colors.primary),
+                }}
+              >
+                <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textInverse }}>
+                  Close
+                </Text>
+              </LinearGradient>
             </AnimatedPressable>
           </View>
         </AnimatedPressable>

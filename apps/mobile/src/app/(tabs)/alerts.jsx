@@ -5,6 +5,7 @@ import {
   ScrollView,
   RefreshControl,
   Animated,
+  Platform,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -15,6 +16,7 @@ import {
   Info,
   ShieldAlert,
   Zap,
+  Shield,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,6 +26,8 @@ import { mockAlerts } from '../../mockData';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
 import AnimatedPressable from '../../components/AnimatedPressable';
+import PulseIndicator from '../../components/PulseIndicator';
+import AnimatedNumber from '../../components/AnimatedNumber';
 import { SkeletonList } from '../../components/Skeleton';
 import { apiUrl } from '../../services/apiClient';
 import { haptic } from '../../utils/haptics';
@@ -139,15 +143,15 @@ export default function AlertsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Gradient Header */}
+      {/* Dynamic Gradient Header */}
       <LinearGradient
-        colors={criticalCount > 0 ? ['#991B1B', '#DC2626'] : gradients.header}
+        colors={criticalCount > 0 ? ['#7F1D1D', '#991B1B', '#DC2626'] : gradients.headerVibrant}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
           paddingTop: insets.top + 8,
           paddingHorizontal: 20,
-          paddingBottom: 20,
+          paddingBottom: 22,
         }}
       >
         <View
@@ -157,9 +161,21 @@ export default function AlertsScreen() {
             justifyContent: 'space-between',
           }}
         >
-          <Text style={[typography.largeTitle, { color: colors.textInverse }]}>
-            Alerts
-          </Text>
+          <View>
+            <Text style={[typography.largeTitle, { color: colors.textInverse }]}>
+              Alerts
+            </Text>
+            <Text
+              style={[
+                typography.callout,
+                { color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+              ]}
+            >
+              {alerts.length > 0
+                ? `${alerts.length} active alert${alerts.length !== 1 ? 's' : ''}`
+                : 'No active alerts'}
+            </Text>
+          </View>
           {alerts.length > 0 && (
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {criticalCount > 0 && (
@@ -167,19 +183,20 @@ export default function AlertsScreen() {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
+                    backgroundColor: 'rgba(255,255,255,0.15)',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
                     borderRadius: radius.full,
-                    gap: 5,
+                    gap: 6,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.08)',
                   }}
                 >
-                  <Zap size={13} color="#FCA5A5" />
-                  <Text
-                    style={{ fontSize: 13, fontWeight: '700', color: colors.textInverse }}
-                  >
-                    {criticalCount}
-                  </Text>
+                  <PulseIndicator color="#FCA5A5" size={6} />
+                  <AnimatedNumber
+                    value={criticalCount}
+                    style={{ fontSize: 14, fontWeight: '800', color: colors.textInverse }}
+                  />
                 </View>
               )}
               {warningCount > 0 && (
@@ -187,34 +204,25 @@ export default function AlertsScreen() {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
+                    backgroundColor: 'rgba(255,255,255,0.15)',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
                     borderRadius: radius.full,
-                    gap: 5,
+                    gap: 6,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.08)',
                   }}
                 >
                   <AlertTriangle size={13} color="#FCD34D" />
-                  <Text
-                    style={{ fontSize: 13, fontWeight: '700', color: colors.textInverse }}
-                  >
-                    {warningCount}
-                  </Text>
+                  <AnimatedNumber
+                    value={warningCount}
+                    style={{ fontSize: 14, fontWeight: '800', color: colors.textInverse }}
+                  />
                 </View>
               )}
             </View>
           )}
         </View>
-        <Text
-          style={[
-            typography.callout,
-            { color: 'rgba(255,255,255,0.8)', marginTop: 4 },
-          ]}
-        >
-          {alerts.length > 0
-            ? `${alerts.length} active alert${alerts.length !== 1 ? 's' : ''} requiring attention`
-            : 'No active alerts'}
-        </Text>
       </LinearGradient>
 
       <ScrollView
@@ -236,11 +244,28 @@ export default function AlertsScreen() {
         {isLoading && !alerts.length ? (
           <SkeletonList count={3} />
         ) : alerts.length === 0 ? (
-          <EmptyState
-            icon={<CheckCircle size={40} color={colors.success} />}
-            title="All clear!"
-            subtitle="No active alerts — all residents are stable"
-          />
+          <View style={{ alignItems: 'center', paddingTop: 60 }}>
+            <View
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: colors.successLight,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 20,
+                ...shadows.colored(colors.success),
+              }}
+            >
+              <Shield size={36} color={colors.success} />
+            </View>
+            <Text style={[typography.title3, { color: colors.text, marginBottom: 6 }]}>
+              All Clear
+            </Text>
+            <Text style={{ fontSize: 15, color: colors.textTertiary, textAlign: 'center' }}>
+              No active alerts — all residents are stable
+            </Text>
+          </View>
         ) : (
           alerts
             .sort((a, b) => {
@@ -280,24 +305,37 @@ export default function AlertsScreen() {
                           style={{
                             flexDirection: 'row',
                             alignItems: 'center',
-                            backgroundColor: sev.bg,
-                            paddingHorizontal: 10,
-                            paddingVertical: 4,
-                            borderRadius: radius.full,
-                            gap: 5,
+                            gap: 8,
                           }}
                         >
-                          <SevIcon size={13} color={sev.color} />
-                          <Text
+                          <LinearGradient
+                            colors={sev.gradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
                             style={{
-                              fontSize: 11,
-                              fontWeight: '800',
-                              color: sev.darkText,
-                              letterSpacing: 0.8,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              paddingHorizontal: 10,
+                              paddingVertical: 5,
+                              borderRadius: radius.full,
+                              gap: 5,
                             }}
                           >
-                            {sev.label}
-                          </Text>
+                            <SevIcon size={12} color="#FFFFFF" />
+                            <Text
+                              style={{
+                                fontSize: 11,
+                                fontWeight: '800',
+                                color: '#FFFFFF',
+                                letterSpacing: 0.8,
+                              }}
+                            >
+                              {sev.label}
+                            </Text>
+                          </LinearGradient>
+                          {alert.severity === 'critical' && (
+                            <PulseIndicator color={colors.danger} size={7} />
+                          )}
                         </View>
                         <View
                           style={{
@@ -348,28 +386,33 @@ export default function AlertsScreen() {
                         onPress={() => ackMutation.mutate(alert.id)}
                         disabled={ackMutation.isPending}
                         hapticType="medium"
-                        style={{
-                          backgroundColor: sev.color,
-                          borderRadius: radius.md,
-                          paddingVertical: 13,
-                          alignItems: 'center',
-                          flexDirection: 'row',
-                          justifyContent: 'center',
-                          gap: 8,
-                          ...shadows.colored(sev.color),
-                        }}
                       >
-                        <CheckCircle size={17} color={colors.textInverse} />
-                        <Text
+                        <LinearGradient
+                          colors={sev.gradient}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
                           style={{
-                            color: colors.textInverse,
-                            fontSize: 15,
-                            fontWeight: '600',
-                            letterSpacing: -0.3,
+                            borderRadius: radius.lg,
+                            paddingVertical: 14,
+                            alignItems: 'center',
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            gap: 8,
+                            ...shadows.colored(sev.color),
                           }}
                         >
-                          Acknowledge
-                        </Text>
+                          <CheckCircle size={17} color={colors.textInverse} />
+                          <Text
+                            style={{
+                              color: colors.textInverse,
+                              fontSize: 15,
+                              fontWeight: '700',
+                              letterSpacing: -0.3,
+                            }}
+                          >
+                            Acknowledge
+                          </Text>
+                        </LinearGradient>
                       </AnimatedPressable>
                     </View>
                   </Card>

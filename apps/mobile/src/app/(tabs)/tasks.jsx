@@ -14,14 +14,17 @@ import {
   Clock,
   ClipboardList,
   AlertCircle,
+  Sparkles,
 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatDistanceToNow } from 'date-fns';
 import { colors, radius, shadows, typography, gradients, animation } from '../../theme';
 import { mockTasks } from '../../mockData';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
 import AnimatedPressable from '../../components/AnimatedPressable';
-import GradientHeader from '../../components/GradientHeader';
+import ProgressRing from '../../components/ProgressRing';
+import AnimatedNumber from '../../components/AnimatedNumber';
 import { haptic } from '../../utils/haptics';
 import { SkeletonList } from '../../components/Skeleton';
 import { apiUrl } from '../../services/apiClient';
@@ -68,6 +71,7 @@ function AnimatedTaskCard({ children, index, style }) {
 
 export default function TasksScreen() {
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   const {
     data: tasks = mockTasks,
@@ -110,46 +114,44 @@ export default function TasksScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Gradient Header with progress */}
-      <GradientHeader
-        title="Tasks"
-        subtitle={tasks.length > 0 ? `${completedTasks.length} of ${tasks.length} completed` : undefined}
+      {/* Gradient Header with ProgressRing */}
+      <LinearGradient
+        colors={gradients.headerVibrant}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          paddingTop: insets.top + 8,
+          paddingHorizontal: 20,
+          paddingBottom: 24,
+        }}
       >
-        {tasks.length > 0 && (
-          <View style={{ marginTop: 14 }}>
-            <View
-              style={{
-                height: 6,
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                borderRadius: 3,
-                overflow: 'hidden',
-              }}
-            >
-              <LinearGradient
-                colors={['#60A5FA', '#FFFFFF']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{
-                  height: 6,
-                  width: `${pct}%`,
-                  borderRadius: 3,
-                }}
-              />
-            </View>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '700',
-                color: 'rgba(255,255,255,0.9)',
-                textAlign: 'right',
-                marginTop: 6,
-              }}
-            >
-              {pct}%
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={[typography.largeTitle, { color: colors.textInverse }]}>
+              Tasks
+            </Text>
+            <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
+              {tasks.length > 0 ? `${completedTasks.length} of ${tasks.length} completed` : 'No tasks assigned'}
             </Text>
           </View>
-        )}
-      </GradientHeader>
+          {tasks.length > 0 && (
+            <ProgressRing
+              progress={pct}
+              size={64}
+              strokeWidth={5}
+              color="#FFFFFF"
+              trackColor="rgba(255,255,255,0.2)"
+              textStyle={{ color: '#FFFFFF', fontSize: 14, fontWeight: '800' }}
+            />
+          )}
+        </View>
+      </LinearGradient>
 
       <ScrollView
         style={{ flex: 1 }}
@@ -185,15 +187,15 @@ export default function TasksScreen() {
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 8,
-                    marginBottom: 12,
+                    marginBottom: 14,
                   }}
                 >
-                  <View
+                  <LinearGradient
+                    colors={gradients.primary}
                     style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 13,
-                      backgroundColor: colors.primaryLight,
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
@@ -202,16 +204,16 @@ export default function TasksScreen() {
                       style={{
                         fontSize: 12,
                         fontWeight: '800',
-                        color: colors.primary,
+                        color: '#FFFFFF',
                       }}
                     >
                       {pendingTasks.length}
                     </Text>
-                  </View>
+                  </LinearGradient>
                   <Text
                     style={[
                       typography.headline,
-                      { color: colors.textSecondary },
+                      { color: colors.text },
                     ]}
                   >
                     Pending
@@ -236,26 +238,27 @@ export default function TasksScreen() {
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 8,
-                    marginBottom: 12,
+                    marginBottom: 14,
                   }}
                 >
-                  <View
+                  <LinearGradient
+                    colors={['#22C55E', '#4ADE80']}
                     style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 13,
-                      backgroundColor: colors.successLight,
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <CheckCircle2 size={14} color={colors.success} />
-                  </View>
+                    <CheckCircle2 size={15} color="#FFFFFF" />
+                  </LinearGradient>
                   <Text
                     style={[typography.headline, { color: colors.textMuted }]}
                   >
                     Completed
                   </Text>
+                  <Sparkles size={14} color={colors.success} style={{ marginLeft: 2 }} />
                 </View>
                 {completedTasks.map((task, idx) => (
                   <AnimatedTaskCard key={task.id} index={idx}>

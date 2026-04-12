@@ -26,12 +26,12 @@ import {
   Stethoscope,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, typography, shadows, gradients } from '../../theme';
 import { useAuth } from '../../utils/auth/useAuth';
 import Avatar from '../../components/Avatar';
 import Card from '../../components/Card';
 import AnimatedPressable from '../../components/AnimatedPressable';
-import GradientHeader from '../../components/GradientHeader';
 import { haptic } from '../../utils/haptics';
 
 const SETTINGS_KEY = '@careconnect_settings';
@@ -118,7 +118,28 @@ export default function SettingsScreen() {
       }}
     >
       {/* Gradient Header */}
-      <GradientHeader title="Settings" />
+      <LinearGradient
+        colors={gradients.headerVibrant}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          paddingTop: insets.top + 8,
+          paddingBottom: 20,
+          paddingHorizontal: 20,
+        }}
+      >
+        <Text style={[typography.largeTitle, { color: colors.textInverse }]}>
+          Settings
+        </Text>
+        <Text
+          style={[
+            typography.footnote,
+            { color: 'rgba(255,255,255,0.7)', marginTop: 4 },
+          ]}
+        >
+          Preferences & account management
+        </Text>
+      </LinearGradient>
 
       <ScrollView
         style={{ flex: 1 }}
@@ -134,35 +155,46 @@ export default function SettingsScreen() {
             setShowProfile(true);
           }}
         >
-          <Card variant="elevated" style={{ marginBottom: 24 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-              }}
+          <View style={{ marginBottom: 24, borderRadius: radius.xl, overflow: 'hidden', ...shadows.lg }}>
+            <LinearGradient
+              colors={['#EFF6FF', '#FFFFFF']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ padding: 16, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.primaryBorder }}
             >
-              <Avatar name={userName} size={56} />
-              <View style={{ marginLeft: 14, flex: 1 }}>
-                <Text style={[typography.headline, { color: colors.text }]}>
-                  {userName}
-                </Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 6,
-                    marginTop: 2,
-                  }}
-                >
-                  <Stethoscope size={13} color={colors.primary} />
-                  <Text style={{ fontSize: 14, color: colors.textSecondary }}>
-                    {userRole}
-                  </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
+              >
+                <View style={{ borderWidth: 2.5, borderColor: colors.primary, borderRadius: 32, padding: 2 }}>
+                  <Avatar name={userName} size={56} />
                 </View>
+                <View style={{ marginLeft: 14, flex: 1 }}>
+                  <Text style={[typography.headline, { color: colors.text, fontWeight: '700' }]}>
+                    {userName}
+                  </Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      marginTop: 3,
+                    }}
+                  >
+                    <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
+                      <Stethoscope size={12} color={colors.primary} />
+                    </View>
+                    <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+                      {userRole}
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color={colors.primary} />
               </View>
-              <ChevronRight size={20} color={colors.textMuted} />
-            </View>
-          </Card>
+            </LinearGradient>
+          </View>
         </AnimatedPressable>
 
         {/* Settings Groups */}
@@ -243,27 +275,33 @@ export default function SettingsScreen() {
         <AnimatedPressable
           hapticType="heavy"
           onPress={handleSignOut}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 14,
-            marginBottom: 20,
-            backgroundColor: '#FEF2F2',
-            borderRadius: radius.lg,
-          }}
+          style={{ marginBottom: 20, borderRadius: radius.xl, overflow: 'hidden' }}
         >
-          <LogOut size={18} color={colors.statusCritical} />
-          <Text
+          <LinearGradient
+            colors={gradients.dangerVibrant}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
             style={{
-              fontSize: 15,
-              fontWeight: '600',
-              color: colors.statusCritical,
-              marginLeft: 8,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 16,
+              borderRadius: radius.xl,
+              ...shadows.colored(colors.danger),
             }}
           >
-            Sign Out
-          </Text>
+            <LogOut size={18} color={colors.textInverse} />
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '700',
+                color: colors.textInverse,
+                marginLeft: 8,
+              }}
+            >
+              Sign Out
+            </Text>
+          </LinearGradient>
         </AnimatedPressable>
       </ScrollView>
 
@@ -380,24 +418,29 @@ export default function SettingsScreen() {
               <AnimatedPressable
                 onPress={handleSaveProfile}
                 hapticType="success"
-                style={{
-                  flex: 1,
-                  padding: 16,
-                  borderRadius: radius.lg,
-                  backgroundColor: colors.primary,
-                  alignItems: 'center',
-                  ...shadows.colored(colors.primary),
-                }}
+                style={{ flex: 1, borderRadius: radius.xl, overflow: 'hidden' }}
               >
-                <Text
+                <LinearGradient
+                  colors={gradients.primary}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
                   style={{
-                    fontSize: 16,
-                    fontWeight: '600',
-                    color: colors.textInverse,
+                    padding: 16,
+                    borderRadius: radius.xl,
+                    alignItems: 'center',
+                    ...shadows.colored(colors.primary),
                   }}
                 >
-                  Save
-                </Text>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: '700',
+                      color: colors.textInverse,
+                    }}
+                  >
+                    Save
+                  </Text>
+                </LinearGradient>
               </AnimatedPressable>
             </View>
           </View>
@@ -470,10 +513,10 @@ function SettingsItem({
     >
       <View
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 10,
-          backgroundColor: colors.surfaceSecondary,
+          width: 38,
+          height: 38,
+          borderRadius: 12,
+          backgroundColor: colors.primaryLight,
           alignItems: 'center',
           justifyContent: 'center',
         }}
