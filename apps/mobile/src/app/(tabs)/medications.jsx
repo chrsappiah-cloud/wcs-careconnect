@@ -22,7 +22,6 @@ import { colors, radius, shadows, typography, gradients } from '../../theme';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
 import AnimatedPressable from '../../components/AnimatedPressable';
-import { haptic } from '../../utils/haptics';
 import {
   searchDrugs,
   topAdverseReactions,
@@ -445,10 +444,9 @@ export default function MedicationsScreen() {
               <AnimatedPressable
                 key={`${drug.rxcui}-${i}`}
                 onPress={() => {
-                  haptic.selection();
                   setSelectedDrug(drug);
                 }}
-                hapticType={null}
+                hapticType="selection"
               >
                 <Card style={{ marginBottom: 8 }}>
                   <View
@@ -571,7 +569,6 @@ export default function MedicationsScreen() {
                 <AnimatedPressable
                   key={med.rxcui}
                   onPress={() => {
-                    haptic.selection();
                     setSearch(med.name.split(' ')[0]);
                     setSelectedDrug({
                       rxcui: med.rxcui,
@@ -579,7 +576,7 @@ export default function MedicationsScreen() {
                       tty: 'IN',
                     });
                   }}
-                  hapticType={null}
+                  hapticType="selection"
                   style={{
                     backgroundColor: colors.surface,
                     borderWidth: 1.5,

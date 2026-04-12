@@ -25,7 +25,6 @@ import { colors, radius, shadows, typography, gradients } from '../../theme';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
 import AnimatedPressable from '../../components/AnimatedPressable';
-import haptic from '../../utils/haptics';
 import {
   checkDrugInteractions,
   COMMON_MEDICATIONS,
@@ -172,7 +171,7 @@ export default function InteractionsScreen() {
                 {med.name}
               </Text>
               <AnimatedPressable
-                onPress={() => { haptic.light(); removeMed(med.rxcui); }}
+                onPress={() => removeMed(med.rxcui)}
                 hapticType="light"
                 style={{ marginLeft: 6, padding: 4 }}
               >
@@ -183,7 +182,7 @@ export default function InteractionsScreen() {
 
           {/* Add button */}
           <AnimatedPressable
-            onPress={() => { haptic.selection(); setShowPicker(!showPicker); }}
+            onPress={() => setShowPicker(!showPicker)}
             hapticType="selection"
             style={{
               flexDirection: 'row',
@@ -210,7 +209,7 @@ export default function InteractionsScreen() {
 
           {selectedMeds.length > 0 && (
             <AnimatedPressable
-              onPress={() => { haptic.warning(); clearAll(); }}
+              onPress={() => clearAll()}
               hapticType="warning"
               style={{ justifyContent: 'center', paddingHorizontal: 8 }}
             >
@@ -238,7 +237,7 @@ export default function InteractionsScreen() {
               ).map((med) => (
                 <AnimatedPressable
                   key={med.rxcui}
-                  onPress={() => { haptic.selection(); addMed(med); }}
+                  onPress={() => addMed(med)}
                   hapticType="selection"
                   style={{
                     backgroundColor: colors.surfaceSecondary,

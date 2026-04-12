@@ -35,7 +35,7 @@ import Card from '../../../components/Card';
 import SectionHeader from '../../../components/SectionHeader';
 import EmptyState from '../../../components/EmptyState';
 import AnimatedPressable from '../../../components/AnimatedPressable';
-import haptic from '../../../utils/haptics';
+import { haptic } from '../../../utils/haptics';
 import { apiUrl } from '../../../services/apiClient';
 
 const VITAL_CONFIG = {
@@ -261,7 +261,7 @@ export default function ResidentDetailScreen() {
         }}
       >
         <AnimatedPressable
-          onPress={() => { haptic.light(); router.back(); }}
+          onPress={() => router.back()}
           hapticType="light"
           hitSlop={12}
           style={{
@@ -279,7 +279,7 @@ export default function ResidentDetailScreen() {
           Resident Detail
         </Text>
         <AnimatedPressable
-          onPress={() => { haptic.medium(); simulateBLEReading(); }}
+          onPress={() => simulateBLEReading()}
           hapticType="medium"
           style={{
             width: 36,
@@ -456,7 +456,7 @@ export default function ResidentDetailScreen() {
             right={
               <AnimatedPressable
                 hitSlop={8}
-                onPress={() => { haptic.light(); setShowAddTask(true); }}
+                onPress={() => setShowAddTask(true)}
                 hapticType="light"
                 style={{
                   width: 30,
@@ -484,7 +484,6 @@ export default function ResidentDetailScreen() {
               <AnimatedPressable
                 key={task.id}
                 onPress={() => {
-                  haptic.medium();
                   Alert.alert(
                     'Complete Task',
                     `Mark "${task.title}" as completed?`,
@@ -497,6 +496,7 @@ export default function ResidentDetailScreen() {
                     ],
                   );
                 }}
+                hapticType="medium"
               >
                 <Card style={{ marginBottom: 10 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -635,7 +635,6 @@ export default function ResidentDetailScreen() {
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <AnimatedPressable
                 onPress={() => {
-                  haptic.light();
                   setShowAddTask(false);
                   setNewTaskTitle('');
                   setNewTaskDescription('');
@@ -660,7 +659,7 @@ export default function ResidentDetailScreen() {
                 </Text>
               </AnimatedPressable>
               <AnimatedPressable
-                onPress={() => { haptic.success(); handleCreateTask(); }}
+                onPress={() => handleCreateTask()}
                 hapticType="success"
                 style={{
                   flex: 1,

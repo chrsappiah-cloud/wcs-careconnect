@@ -25,7 +25,6 @@ import EmptyState from '../../components/EmptyState';
 import AnimatedPressable from '../../components/AnimatedPressable';
 import ProgressRing from '../../components/ProgressRing';
 import AnimatedNumber from '../../components/AnimatedNumber';
-import { haptic } from '../../utils/haptics';
 import { SkeletonList } from '../../components/Skeleton';
 import { apiUrl } from '../../services/apiClient';
 
@@ -282,18 +281,13 @@ function TaskItem({ task, onToggle }) {
   const priority = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
 
   const handleToggle = () => {
-    if (isCompleted) {
-      haptic.light();
-    } else {
-      haptic.success();
-    }
     onToggle();
   };
 
   return (
     <AnimatedPressable
       onPress={handleToggle}
-      hapticType={isCompleted ? 'light' : 'medium'}
+      hapticType={isCompleted ? 'light' : 'success'}
       style={{ marginBottom: 10 }}
     >
       <Card

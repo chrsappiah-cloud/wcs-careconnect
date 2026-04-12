@@ -36,7 +36,6 @@ import AnimatedNumber from '../../components/AnimatedNumber';
 import PulseIndicator from '../../components/PulseIndicator';
 import { apiUrl } from '../../services/apiClient';
 import { SkeletonList } from '../../components/Skeleton';
-import { haptic } from '../../utils/haptics';
 
 function AnimatedCard({ children, index, style, onPress }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -236,7 +235,7 @@ export default function ResidentsScreen() {
             }}
           />
           {search.length > 0 && (
-            <AnimatedPressable onPress={() => { setSearch(''); haptic.selection(); }} hapticType={null}>
+            <AnimatedPressable onPress={() => setSearch('')} hapticType="selection">
               <View
                 style={{
                   width: 26,

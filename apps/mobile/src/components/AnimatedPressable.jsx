@@ -3,7 +3,9 @@ import { Animated, Pressable, StyleSheet } from 'react-native';
 import { animation } from '../theme';
 import { haptic } from '../utils/haptics';
 
-export default function AnimatedPressable({
+const THROTTLE_MS = 250;
+
+function AnimatedPressable({
   children,
   onPress,
   style,
@@ -13,6 +15,7 @@ export default function AnimatedPressable({
   ...props
 }) {
   const scale = useRef(new Animated.Value(1)).current;
+  const lastPress = useRef(0);
 
   const onPressIn = useCallback(() => {
     Animated.spring(scale, {
@@ -31,6 +34,9 @@ export default function AnimatedPressable({
   }, [scale]);
 
   const handlePress = useCallback(() => {
+    const now = Date.now();
+    if (now - lastPress.current < THROTTLE_MS) return;
+    lastPress.current = now;
     if (hapticType && haptic[hapticType]) haptic[hapticType]();
     onPress?.();
   }, [onPress, hapticType]);
@@ -55,6 +61,8 @@ export default function AnimatedPressable({
     </Pressable>
   );
 }
+
+export default React.memo(AnimatedPressable);
 
 const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },

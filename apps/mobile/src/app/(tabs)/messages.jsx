@@ -19,7 +19,6 @@ import { mockMessages } from '../../mockData';
 import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
 import AnimatedPressable from '../../components/AnimatedPressable';
-import { haptic } from '../../utils/haptics';
 import { apiUrl } from '../../services/apiClient';
 
 const ROLE_COLORS = {
@@ -69,7 +68,6 @@ export default function MessagesScreen() {
 
   const handleSend = () => {
     if (content.trim()) {
-      haptic.medium();
       sendMessageMutation.mutate({ content: content.trim() });
     }
   };

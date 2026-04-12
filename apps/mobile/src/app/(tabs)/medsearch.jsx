@@ -28,7 +28,6 @@ import { colors, radius, shadows, typography, gradients } from '../../theme';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
 import AnimatedPressable from '../../components/AnimatedPressable';
-import { haptic } from '../../utils/haptics';
 import {
   searchConditions,
   searchSNOMEDFindings,
@@ -142,7 +141,6 @@ export default function MedSearchScreen() {
             <AnimatedPressable
               key={tab.key}
               onPress={() => {
-                haptic.selection();
                 setActiveTab(tab.key);
                 setSearch('');
               }}
@@ -230,7 +228,7 @@ export default function MedSearchScreen() {
             <ActivityIndicator size="small" color={colors.primary} />
           )}
           {search.length > 0 && (
-            <AnimatedPressable onPress={() => { haptic.light(); setSearch(''); }} hapticType="light">
+            <AnimatedPressable onPress={() => setSearch('')} hapticType="light">
               <X size={18} color={colors.textMuted} />
             </AnimatedPressable>
           )}
@@ -256,7 +254,19 @@ export default function MedSearchScreen() {
               </Text>
             )}
             {icdResults.map((item, i) => (
-              <Card key={item.id || i} style={{ marginBottom: 8 }}>
+              <AnimatedPressable
+                key={item.id || i}
+                onPress={() => {
+                  setDetailModal({
+                    type: 'icd11',
+                    title: item.title,
+                    code: item.code,
+                    score: item.score,
+                  });
+                }}
+                hapticType="selection"
+              >
+              <Card style={{ marginBottom: 8 }}>
                 <View
                   style={{ flexDirection: 'row', alignItems: 'flex-start' }}
                 >
@@ -321,8 +331,8 @@ export default function MedSearchScreen() {
                   </View>
                 </View>
               </Card>
+              </AnimatedPressable>
             ))}
-            {!icdLoading && icdResults.length === 0 && (
               <EmptyState
                 icon={<Stethoscope size={36} color={colors.textMuted} />}
                 title="No conditions found"
@@ -349,7 +359,6 @@ export default function MedSearchScreen() {
               <AnimatedPressable
                 key={item.code || i}
                 onPress={async () => {
-                  haptic.selection();
                   setDetailModal({
                     type: 'snomed',
                     title: item.display,
@@ -451,7 +460,18 @@ export default function MedSearchScreen() {
               </Text>
             )}
             {amtResults.map((item, i) => (
-              <Card key={item.code || i} style={{ marginBottom: 8 }}>
+              <AnimatedPressable
+                key={item.code || i}
+                onPress={() => {
+                  setDetailModal({
+                    type: 'amt',
+                    title: item.display,
+                    code: item.code,
+                  });
+                }}
+                hapticType="selection"
+              >
+              <Card style={{ marginBottom: 8 }}>
                 <View
                   style={{ flexDirection: 'row', alignItems: 'flex-start' }}
                 >
@@ -499,6 +519,7 @@ export default function MedSearchScreen() {
                   </View>
                 </View>
               </Card>
+              </AnimatedPressable>
             ))}
             {!amtLoading && amtResults.length === 0 && (
               <EmptyState
@@ -527,7 +548,6 @@ export default function MedSearchScreen() {
               <AnimatedPressable
                 key={patient.id || i}
                 onPress={() => {
-                  haptic.selection();
                   setDetailModal({
                     type: 'fhir',
                     title: patient.name || 'Patient',
@@ -536,6 +556,7 @@ export default function MedSearchScreen() {
                     birthDate: patient.birthDate,
                   });
                 }}
+                hapticType="selection"
               >
                 <Card style={{ marginBottom: 8 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -636,7 +657,7 @@ export default function MedSearchScreen() {
                 {AGED_CARE_CONDITIONS.map((cond) => (
                   <AnimatedPressable
                     key={cond.code}
-                    onPress={() => { haptic.selection(); setSearch(cond.display); }}
+                    onPress={() => setSearch(cond.display)}
                     hapticType="selection"
                     style={{
                       backgroundColor: colors.surface,
@@ -720,7 +741,11 @@ export default function MedSearchScreen() {
                   width: 44,
                   height: 44,
                   borderRadius: 12,
-                  backgroundColor: detailModal?.type === 'snomed' ? colors.successLight : colors.primaryLight,
+                  backgroundColor:
+                    detailModal?.type === 'snomed' ? colors.successLight
+                    : detailModal?.type === 'icd11' ? '#F5F3FF'
+                    : detailModal?.type === 'amt' ? '#FFF1F2'
+                    : colors.primaryLight,
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginRight: 12,
@@ -728,6 +753,10 @@ export default function MedSearchScreen() {
               >
                 {detailModal?.type === 'snomed' ? (
                   <Microscope size={20} color={colors.success} />
+                ) : detailModal?.type === 'icd11' ? (
+                  <BookOpen size={20} color={colors.vitals.bp.color} />
+                ) : detailModal?.type === 'amt' ? (
+                  <Heart size={20} color={colors.heart} />
                 ) : (
                   <Database size={20} color={colors.primary} />
                 )}
@@ -737,7 +766,10 @@ export default function MedSearchScreen() {
                   {detailModal?.title}
                 </Text>
                 <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
-                  {detailModal?.type === 'snomed' ? 'SNOMED CT-AU Finding' : 'FHIR R4 Patient'}
+                  {detailModal?.type === 'snomed' ? 'SNOMED CT-AU Finding'
+                    : detailModal?.type === 'icd11' ? 'WHO ICD-11 Classification'
+                    : detailModal?.type === 'amt' ? 'Australian Medicines Terminology'
+                    : 'FHIR R4 Patient'}
                 </Text>
               </View>
             </View>
@@ -761,6 +793,23 @@ export default function MedSearchScreen() {
               </View>
             )}
 
+            {detailModal?.type === 'icd11' && (
+              <View style={{ gap: 12 }}>
+                <DetailRow label="ICD-11 Code" value={detailModal.code} />
+                {detailModal.score != null && (
+                  <DetailRow label="Match Score" value={detailModal.score.toFixed(1)} />
+                )}
+                <DetailRow label="Source" value="WHO ICD-11 API" />
+              </View>
+            )}
+
+            {detailModal?.type === 'amt' && (
+              <View style={{ gap: 12 }}>
+                <DetailRow label="AMT Code" value={detailModal.code} />
+                <DetailRow label="Source" value="CSIRO Ontoserver AMT" />
+              </View>
+            )}
+
             {detailModal?.type === 'fhir' && (
               <View style={{ gap: 12 }}>
                 <DetailRow label="FHIR ID" value={detailModal.id} />
@@ -771,7 +820,7 @@ export default function MedSearchScreen() {
             )}
 
             <AnimatedPressable
-              onPress={() => { haptic.light(); setDetailModal(null); }}
+              onPress={() => setDetailModal(null)}
               hapticType="light"
               style={{
                 marginTop: 24,
