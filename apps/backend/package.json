@@ -2,13 +2,16 @@
   "name": "careconnect-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "CareConnect local dev API server",
+  "description": "CareConnect API server (Express + Supabase PostgreSQL)",
   "scripts": {
-    "start": "node server.js",
+    "start": "node -r dotenv/config server.js",
+    "migrate": "node migrate.js",
     "seed": "node seed.js"
   },
   "dependencies": {
-    "json-server": "^0.17.4",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
   }
 }
