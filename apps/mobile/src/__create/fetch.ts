@@ -4,6 +4,8 @@ import { fetch as expoFetch } from 'expo/fetch';
 const originalFetch = fetch;
 const authKey = `${process.env.EXPO_PUBLIC_PROJECT_GROUP_ID}-jwt`;
 
+const FIRST_PARTY_TIMEOUT = 15_000;
+
 const getURLFromArgs = (...args: Parameters<typeof fetch>) => {
   const [urlArg] = args;
   let url: string | null;
@@ -32,6 +34,18 @@ const isSecondPartyURL = (url: string) => {
   return url.startsWith('/_create/');
 };
 
+function isJwtExpired(jwt: string): boolean {
+  try {
+    const parts = jwt.split('.');
+    if (parts.length !== 3) return true;
+    const payload = JSON.parse(atob(parts[1]));
+    if (!payload.exp) return false;
+    return Date.now() >= payload.exp * 1000 - 30_000; // 30s buffer
+  } catch {
+    return true;
+  }
+}
+
 type Params = Parameters<typeof expoFetch>;
 const fetchToWeb = async function fetchWithHeaders(...args: Params) {
   const firstPartyURL = process.env.EXPO_PUBLIC_BASE_URL;
@@ -47,7 +61,6 @@ const fetchToWeb = async function fetchWithHeaders(...args: Params) {
   }
 
   const isExternalFetch = !isFirstPartyURL(url);
-  // we should not add headers to requests that don't go to our own server
   if (isExternalFetch) {
     return expoFetch(input, init);
   }
@@ -63,7 +76,7 @@ const fetchToWeb = async function fetchWithHeaders(...args: Params) {
   const initHeaders = init?.headers ?? {};
   const finalHeaders = new Headers(initHeaders);
 
-  const headers = {
+  const headers: Record<string, string | undefined> = {
     'x-createxyz-project-group-id': process.env.EXPO_PUBLIC_PROJECT_GROUP_ID,
     host: process.env.EXPO_PUBLIC_HOST,
     'x-forwarded-host': process.env.EXPO_PUBLIC_HOST,
@@ -76,22 +89,33 @@ const fetchToWeb = async function fetchWithHeaders(...args: Params) {
     }
   }
 
-  const auth = await SecureStore.getItemAsync(authKey)
-    .then((auth) => {
-      return auth ? JSON.parse(auth) : null;
-    })
-    .catch(() => {
-      return null;
-    });
+  let auth: { jwt?: string } | null = null;
+  try {
+    const raw = await SecureStore.getItemAsync(authKey);
+    if (raw) {
+      auth = JSON.parse(raw);
+    }
+  } catch {
+    auth = null;
+  }
 
-  if (auth) {
+  if (auth?.jwt && !isJwtExpired(auth.jwt)) {
     finalHeaders.set('authorization', `Bearer ${auth.jwt}`);
   }
 
-  return expoFetch(finalInput, {
-    ...init,
-    headers: finalHeaders,
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FIRST_PARTY_TIMEOUT);
+
+  try {
+    const response = await expoFetch(finalInput, {
+      ...init,
+      headers: finalHeaders,
+      signal: init?.signal || controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timer);
+  }
 };
 
 export default fetchToWeb;

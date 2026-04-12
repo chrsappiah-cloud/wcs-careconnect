@@ -1,20 +1,71 @@
-import React from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  Animated,
+} from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle, Clock } from "lucide-react-native";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Bell,
+  Info,
+  ShieldAlert,
+  Zap,
+} from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
+import { colors, radius, shadows, typography } from "../../theme";
+import { mockAlerts } from "../../mockData";
+import Card from "../../components/Card";
+import EmptyState from "../../components/EmptyState";
+import { SkeletonList } from "../../components/Skeleton";
+
+const SEVERITY_CONFIG = {
+  critical: {
+    color: colors.danger,
+    bg: colors.dangerLight,
+    darkText: colors.dangerDark,
+    icon: ShieldAlert,
+    label: "CRITICAL",
+  },
+  warning: {
+    color: colors.warning,
+    bg: colors.warningLight,
+    darkText: colors.warningDark,
+    icon: AlertTriangle,
+    label: "WARNING",
+  },
+  info: {
+    color: colors.severity.info,
+    bg: "#EFF6FF",
+    darkText: "#1E40AF",
+    icon: Info,
+    label: "INFO",
+  },
+};
 
 export default function AlertsScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
 
-  const { data: alerts = [], isLoading } = useQuery({
+  const {
+    data: alerts = mockAlerts,
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useQuery({
     queryKey: ["alerts"],
     queryFn: async () => {
       const response = await fetch("/api/alerts?status=open");
+      if (!response.ok) throw new Error(`Alerts fetch failed: ${response.status}`);
       return response.json();
     },
+    placeholderData: mockAlerts,
   });
 
   const ackMutation = useMutation({
@@ -28,6 +79,7 @@ export default function AlertsScreen() {
           acknowledged_by: "Nurse Sarah",
         }),
       });
+      if (!response.ok) throw new Error(`Alert update failed: ${response.status}`);
       return response.json();
     },
     onSuccess: () => {
@@ -36,145 +88,209 @@ export default function AlertsScreen() {
     },
   });
 
+  const criticalCount = alerts.filter((a) => a.severity === "critical").length;
+  const warningCount = alerts.filter((a) => a.severity === "warning").length;
+
   return (
     <View
-      style={{ flex: 1, backgroundColor: "#F9FAFB", paddingTop: insets.top }}
+      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}
     >
-      <View style={{ padding: 20 }}>
-        <Text
-          style={{
-            fontSize: 32,
-            fontWeight: "bold",
-            color: "#111827",
-            marginBottom: 8,
-          }}
-        >
-          Active Alerts
-        </Text>
-        <Text style={{ fontSize: 18, color: "#6B7280" }}>
-          {alerts.length} critical issues require attention
+      {/* Header */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <Text style={[typography.largeTitle, { color: colors.text }]}>
+            Alerts
+          </Text>
+          {alerts.length > 0 && (
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {criticalCount > 0 && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: colors.dangerLight,
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: radius.full,
+                    gap: 4,
+                  }}
+                >
+                  <Zap size={14} color={colors.danger} />
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: colors.danger }}>
+                    {criticalCount}
+                  </Text>
+                </View>
+              )}
+              {warningCount > 0 && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: colors.warningLight,
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: radius.full,
+                    gap: 4,
+                  }}
+                >
+                  <AlertTriangle size={14} color={colors.warning} />
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: colors.warningDark }}>
+                    {warningCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+        <Text style={[typography.callout, { color: colors.textTertiary, marginTop: 4, marginBottom: 8 }]}>
+          {alerts.length > 0
+            ? `${alerts.length} active alert${alerts.length !== 1 ? "s" : ""} requiring attention`
+            : "No active alerts"}
         </Text>
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor={colors.primary}
+          />
+        }
       >
-        {isLoading ? (
-          <Text style={{ fontSize: 20, textAlign: "center", color: "#6B7280" }}>
-            Loading alerts...
-          </Text>
+        {isLoading && !alerts.length ? (
+          <SkeletonList count={3} />
         ) : alerts.length === 0 ? (
-          <View style={{ alignItems: "center", marginTop: 100 }}>
-            <CheckCircle size={80} color="#10B981" />
-            <Text
-              style={{
-                fontSize: 24,
-                fontWeight: "bold",
-                color: "#111827",
-                marginTop: 20,
-              }}
-            >
-              All residents stable
-            </Text>
-          </View>
+          <EmptyState
+            icon={<CheckCircle size={40} color={colors.success} />}
+            title="All clear!"
+            subtitle="No active alerts — all residents are stable"
+          />
         ) : (
-          alerts.map((alert) => (
-            <View
-              key={alert.id}
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 24,
-                padding: 24,
-                marginBottom: 20,
-                borderLeftWidth: 8,
-                borderLeftColor:
-                  alert.severity === "critical" ? "#EF4444" : "#F59E0B",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.1,
-                shadowRadius: 10,
-                elevation: 3,
-              }}
-            >
-              <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-                <View
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 28,
-                    backgroundColor:
-                      alert.severity === "critical" ? "#FEF2F2" : "#FFFBEB",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: 16,
-                  }}
-                >
-                  <AlertTriangle
-                    size={32}
-                    color={
-                      alert.severity === "critical" ? "#EF4444" : "#F59E0B"
-                    }
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 22,
-                      fontWeight: "bold",
-                      color: "#111827",
-                    }}
-                  >
-                    {alert.resident_name}
-                  </Text>
-                  <Text
-                    style={{ fontSize: 18, color: "#4B5563", marginTop: 4 }}
-                  >
-                    {alert.resident_room}
-                  </Text>
-                </View>
-                <View style={{ alignItems: "flex-end" }}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Clock size={16} color="#9CA3AF" />
-                    <Text
-                      style={{ fontSize: 14, color: "#9CA3AF", marginLeft: 4 }}
-                    >
-                      {format(new Date(alert.created_at), "h:mm a")}
-                    </Text>
-                  </View>
-                </View>
-              </View>
+          alerts
+            .sort((a, b) => {
+              const order = { critical: 0, warning: 1, info: 2 };
+              return (order[a.severity] ?? 3) - (order[b.severity] ?? 3);
+            })
+            .map((alert) => {
+              const sev = SEVERITY_CONFIG[alert.severity] || SEVERITY_CONFIG.info;
+              const SevIcon = sev.icon;
 
-              <Text
-                style={{
-                  fontSize: 20,
-                  color: "#374151",
-                  marginVertical: 16,
-                  lineHeight: 28,
-                }}
-              >
-                {alert.message}
-              </Text>
+              return (
+                <View key={alert.id} style={{ marginBottom: 12 }}>
+                  <Card variant="elevated" noPadding>
+                    {/* Severity accent bar */}
+                    <View
+                      style={{
+                        height: 4,
+                        backgroundColor: sev.color,
+                        borderTopLeftRadius: radius["2xl"],
+                        borderTopRightRadius: radius["2xl"],
+                      }}
+                    />
+                    <View style={{ padding: 18 }}>
+                      {/* Top row: severity badge + time */}
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: 12,
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            backgroundColor: sev.bg,
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                            borderRadius: radius.sm,
+                            gap: 6,
+                          }}
+                        >
+                          <SevIcon size={14} color={sev.color} />
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: "800",
+                              color: sev.darkText,
+                              letterSpacing: 0.8,
+                            }}
+                          >
+                            {sev.label}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                          <Clock size={13} color={colors.textMuted} />
+                          <Text style={{ fontSize: 13, color: colors.textMuted }}>
+                            {formatDistanceToNow(new Date(alert.created_at), {
+                              addSuffix: true,
+                            })}
+                          </Text>
+                        </View>
+                      </View>
 
-              <TouchableOpacity
-                onPress={() => ackMutation.mutate(alert.id)}
-                style={{
-                  backgroundColor: "#111827",
-                  borderRadius: 16,
-                  paddingVertical: 16,
-                  alignItems: "center",
-                  marginTop: 8,
-                }}
-              >
-                <Text
-                  style={{ color: "#FFFFFF", fontSize: 20, fontWeight: "bold" }}
-                >
-                  Acknowledge Alert
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ))
+                      {/* Resident info */}
+                      <Text
+                        style={{
+                          fontSize: 17,
+                          fontWeight: "700",
+                          color: colors.text,
+                          marginBottom: 2,
+                        }}
+                      >
+                        {alert.resident_name}
+                      </Text>
+
+                      {/* Alert message */}
+                      <Text
+                        style={{
+                          fontSize: 15,
+                          color: colors.textSecondary,
+                          lineHeight: 22,
+                          marginTop: 6,
+                          marginBottom: 14,
+                        }}
+                      >
+                        {alert.message}
+                      </Text>
+
+                      {/* Action button */}
+                      <TouchableOpacity
+                        onPress={() => ackMutation.mutate(alert.id)}
+                        disabled={ackMutation.isPending}
+                        activeOpacity={0.8}
+                        style={{
+                          backgroundColor: colors.text,
+                          borderRadius: radius.md,
+                          paddingVertical: 13,
+                          alignItems: "center",
+                          flexDirection: "row",
+                          justifyContent: "center",
+                          gap: 8,
+                          opacity: ackMutation.isPending ? 0.6 : 1,
+                        }}
+                      >
+                        <CheckCircle size={18} color={colors.textInverse} />
+                        <Text
+                          style={{
+                            color: colors.textInverse,
+                            fontSize: 15,
+                            fontWeight: "700",
+                          }}
+                        >
+                          Acknowledge
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </Card>
+                </View>
+              );
+            })
         )}
       </ScrollView>
     </View>

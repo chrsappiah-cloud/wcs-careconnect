@@ -1,0 +1,599 @@
+diff --git a/node_modules/react-native-screens/android/src/main/AndroidManifest.xml b/node_modules/react-native-screens/android/src/main/AndroidManifest.xml
+deleted file mode 100644
+index 5f5d7a2..0000000
+--- a/node_modules/react-native-screens/android/src/main/AndroidManifest.xml
++++ /dev/null
+@@ -1,4 +0,0 @@
+-
+-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+-
+-</manifest>
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_default_enter_in.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_default_enter_in.xml
+deleted file mode 100644
+index 4398c7e..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_default_enter_in.xml
++++ /dev/null
+@@ -1,18 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<set xmlns:android="http://schemas.android.com/apk/res/android">
+-    <alpha
+-        android:interpolator="@android:interpolator/accelerate_decelerate"
+-        android:fromAlpha="0"
+-        android:toAlpha="1.0"
+-        android:startOffset="100"
+-        android:duration="100"/>
+-    <scale
+-        android:interpolator="@android:interpolator/accelerate_decelerate"
+-        android:fromXScale="0.85"
+-        android:toXScale="1"
+-        android:fromYScale="0.85"
+-        android:toYScale="1"
+-        android:pivotX="50%"
+-        android:pivotY="50%"
+-        android:duration="200"/>
+-</set>
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_default_enter_out.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_default_enter_out.xml
+deleted file mode 100644
+index 84c9175..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_default_enter_out.xml
++++ /dev/null
+@@ -1,19 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<set xmlns:android="http://schemas.android.com/apk/res/android">
+-    <alpha
+-        android:fromAlpha="1"
+-        android:toAlpha="0.4"
+-        android:startOffset="100"
+-        android:duration="100"
+-        android:interpolator="@android:interpolator/accelerate_decelerate" />
+-
+-    <scale
+-        android:interpolator="@android:interpolator/accelerate_decelerate"
+-        android:fromXScale="1"
+-        android:toXScale="1.15"
+-        android:fromYScale="1"
+-        android:toYScale="1.15"
+-        android:pivotX="50%"
+-        android:pivotY="50%"
+-        android:duration="200"/>
+-</set>
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_default_exit_in.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_default_exit_in.xml
+deleted file mode 100644
+index 6d6fa02..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_default_exit_in.xml
++++ /dev/null
+@@ -1,17 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<set xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:shareInterpolator="false">
+-    <alpha
+-        android:fromAlpha="0.0"
+-        android:toAlpha="1"
+-        android:startOffset="50"
+-        android:duration="100"/>
+-    <scale
+-        android:fromXScale="1.15"
+-        android:toXScale="1"
+-        android:fromYScale="1.15"
+-        android:toYScale="1"
+-        android:pivotX="50%"
+-        android:pivotY="50%"
+-        android:duration="200"/>
+-</set>
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_default_exit_out.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_default_exit_out.xml
+deleted file mode 100644
+index b20a184..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_default_exit_out.xml
++++ /dev/null
+@@ -1,18 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<set xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:shareInterpolator="false"
+-    android:zAdjustment="top">
+-    <alpha
+-        android:fromAlpha="1"
+-        android:toAlpha="0.0"
+-        android:startOffset="50"
+-        android:duration="100"/>
+-    <scale
+-        android:fromXScale="1"
+-        android:toXScale="0.85"
+-        android:fromYScale="1"
+-        android:toYScale="0.85"
+-        android:pivotX="50%"
+-        android:pivotY="50%"
+-        android:duration="200"/>
+-</set>
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_fade_from_bottom.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_fade_from_bottom.xml
+deleted file mode 100644
+index c7a8abc..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_fade_from_bottom.xml
++++ /dev/null
+@@ -1,14 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<!--Android Nougat open animation-->
+-<!--http://aosp.opersys.com/xref/android-7.1.2_r37/xref/frameworks/base/core/res/res/anim/activity_open_enter.xml-->
+-<set xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:shareInterpolator="false">
+-    <alpha android:fromAlpha="0.0" android:toAlpha="1.0"
+-        android:interpolator="@android:interpolator/decelerate_quint"
+-        android:duration="210"/>
+-    <translate android:fromYDelta="8%" android:toYDelta="0"
+-        android:interpolator="@android:interpolator/decelerate_quint"
+-        android:duration="350"/> <!--we use rns_no_animation_350.xml as the other animation for
+-        this transition since we want both of them to end at the same time. Remember to change
+-        duration in both files when modifying it-->
+-</set>
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_fade_in.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_fade_in.xml
+deleted file mode 100644
+index c78ea61..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_fade_in.xml
++++ /dev/null
+@@ -1,7 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<!--Duration taken from debugging source code-->
+-<alpha xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:fromAlpha="0.0"
+-    android:toAlpha="1.0"
+-    android:duration="150"
+-    />  <!--Remember to change duration in the corresponding xml when modifying it-->
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_fade_out.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_fade_out.xml
+deleted file mode 100644
+index 334e63f..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_fade_out.xml
++++ /dev/null
+@@ -1,7 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<!--Duration taken from debugging source code-->
+-<alpha xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:fromAlpha="1.0"
+-    android:toAlpha="0.0"
+-    android:duration="150"
+-    />  <!--Remember to change duration in the corresponding xml when modifying it-->
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_fade_to_bottom.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_fade_to_bottom.xml
+deleted file mode 100644
+index 2334521..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_fade_to_bottom.xml
++++ /dev/null
+@@ -1,15 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<!--Android Nougat exit animation-->
+-<!--http://aosp.opersys.com/xref/android-7.1.2_r37/xref/frameworks/base/core/res/res/anim/activity_close_exit.xml-->
+-<set xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:shareInterpolator="false">
+-    <alpha android:fromAlpha="1.0" android:toAlpha="0.0"
+-        android:interpolator="@android:interpolator/linear"
+-        android:startOffset="100"
+-        android:duration="150"/>
+-    <translate android:fromYDelta="0%" android:toYDelta="8%"
+-        android:interpolator="@android:interpolator/accelerate_quint"
+-        android:duration="250"/>  <!--we use rns_no_animation_250.xml as the other animation for
+-        this transition since we want both of them to end at the same time. Remember to change
+-        duration in both files when modifying it-->
+-</set>
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_left_background_close.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_left_background_close.xml
+deleted file mode 100644
+index 5d75e0b..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_left_background_close.xml
++++ /dev/null
+@@ -1,5 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:duration="@android:integer/config_shortAnimTime"
+-    android:fromXDelta="30%"
+-    android:toXDelta="0%" />
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_left_background_open.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_left_background_open.xml
+deleted file mode 100644
+index 11a8d45..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_left_background_open.xml
++++ /dev/null
+@@ -1,5 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:duration="@android:integer/config_shortAnimTime"
+-    android:fromXDelta="0%"
+-    android:toXDelta="30%" />
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_left_foreground_close.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_left_foreground_close.xml
+deleted file mode 100644
+index 2cb6237..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_left_foreground_close.xml
++++ /dev/null
+@@ -1,6 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:duration="@android:integer/config_shortAnimTime"
+-    android:interpolator="@android:interpolator/accelerate_decelerate"
+-    android:fromXDelta="0%"
+-    android:toXDelta="-100%" />
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_left_foreground_open.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_left_foreground_open.xml
+deleted file mode 100644
+index 394ac66..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_left_foreground_open.xml
++++ /dev/null
+@@ -1,6 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:duration="@android:integer/config_shortAnimTime"
+-    android:interpolator="@android:interpolator/accelerate_decelerate"
+-    android:fromXDelta="-100%"
+-    android:toXDelta="0%" />
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_right_background_close.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_right_background_close.xml
+deleted file mode 100644
+index 66a611f..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_right_background_close.xml
++++ /dev/null
+@@ -1,5 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:duration="@android:integer/config_shortAnimTime"
+-    android:fromXDelta="-30%"
+-    android:toXDelta="0%" />
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_right_background_open.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_right_background_open.xml
+deleted file mode 100644
+index 1d92c95..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_right_background_open.xml
++++ /dev/null
+@@ -1,5 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:duration="@android:integer/config_shortAnimTime"
+-    android:fromXDelta="0%"
+-    android:toXDelta="-30%" />
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_right_foreground_close.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_right_foreground_close.xml
+deleted file mode 100644
+index 1073ae6..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_right_foreground_close.xml
++++ /dev/null
+@@ -1,6 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:duration="@android:integer/config_shortAnimTime"
+-    android:interpolator="@android:interpolator/accelerate_decelerate"
+-    android:fromXDelta="0%"
+-    android:toXDelta="100%"/>
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_right_foreground_open.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_right_foreground_open.xml
+deleted file mode 100644
+index e687584..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_ios_from_right_foreground_open.xml
++++ /dev/null
+@@ -1,6 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:duration="@android:integer/config_shortAnimTime"
+-    android:interpolator="@android:interpolator/accelerate_decelerate"
+-    android:fromXDelta="100%"
+-    android:toXDelta="0%" />
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_no_animation_20.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_no_animation_20.xml
+deleted file mode 100644
+index 5cc0d23..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_no_animation_20.xml
++++ /dev/null
+@@ -1,6 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<alpha xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:fromAlpha="1.0"
+-    android:toAlpha="1.0"
+-    android:duration="20"
+-    />  <!-- non-zero duration ensures transition events are triggered correctly -->
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_no_animation_250.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_no_animation_250.xml
+deleted file mode 100644
+index bd082a3..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_no_animation_250.xml
++++ /dev/null
+@@ -1,7 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<alpha xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:fromAlpha="1.0"
+-    android:toAlpha="1.0"
+-    android:duration="250"
+-    />  <!--Remember to change duration in the corresponding xml when modifying it-->
+-
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_no_animation_350.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_no_animation_350.xml
+deleted file mode 100644
+index 003dcd1..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_no_animation_350.xml
++++ /dev/null
+@@ -1,6 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<alpha xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:fromAlpha="1.0"
+-    android:toAlpha="1.0"
+-    android:duration="350"
+-    />  <!--Remember to change duration in the corresponding xml when modifying it-->
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_no_animation_medium.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_no_animation_medium.xml
+deleted file mode 100644
+index 560eda6..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_no_animation_medium.xml
++++ /dev/null
+@@ -1,7 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<alpha xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:fromAlpha="1.0"
+-    android:toAlpha="1.0"
+-    android:duration="@android:integer/config_mediumAnimTime"
+-    />  <!--Remember to change duration in the corresponding xml when modifying it-->
+-
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_in_from_bottom.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_in_from_bottom.xml
+deleted file mode 100644
+index 052fe15..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_in_from_bottom.xml
++++ /dev/null
+@@ -1,7 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:fromYDelta="100%"
+-    android:toYDelta="0%"
+-    android:duration="@android:integer/config_mediumAnimTime" />  <!--we use
+-        rns_no_animation_medium.xml as the other animation for this transition since we want both of
+-        them to end at the same time. Remember to change duration in both files when modifying it-->
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_in_from_left.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_in_from_left.xml
+deleted file mode 100644
+index 939110f..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_in_from_left.xml
++++ /dev/null
+@@ -1,5 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:duration="@android:integer/config_mediumAnimTime"
+-    android:fromXDelta="-100%"
+-    android:toXDelta="0%" />
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_in_from_right.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_in_from_right.xml
+deleted file mode 100644
+index 428eb9b..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_in_from_right.xml
++++ /dev/null
+@@ -1,5 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:duration="@android:integer/config_mediumAnimTime"
+-    android:fromXDelta="100%"
+-    android:toXDelta="0%" />
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_out_to_bottom.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_out_to_bottom.xml
+deleted file mode 100644
+index 6b75d25..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_out_to_bottom.xml
++++ /dev/null
+@@ -1,7 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:fromYDelta="0%"
+-    android:toYDelta="100%"
+-    android:duration="@android:integer/config_mediumAnimTime" />  <!--we use
+-        rns_no_animation_medium.xml as the other animation for this transition since we want both of
+-        them to end at the same time. Remember to change duration in both files when modifying it-->
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_out_to_left.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_out_to_left.xml
+deleted file mode 100644
+index 400a202..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_out_to_left.xml
++++ /dev/null
+@@ -1,5 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:duration="@android:integer/config_mediumAnimTime"
+-    android:fromXDelta="0%"
+-    android:toXDelta="-100%"/>
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_out_to_right.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_out_to_right.xml
+deleted file mode 100644
+index a00332b..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_slide_out_to_right.xml
++++ /dev/null
+@@ -1,5 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<translate xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:duration="@android:integer/config_mediumAnimTime"
+-    android:fromXDelta="0%"
+-    android:toXDelta="100%"/>
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_standard_accelerate_interpolator.xml b/node_modules/react-native-screens/android/src/main/res/base/anim/rns_standard_accelerate_interpolator.xml
+deleted file mode 100644
+index 60c57e5..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/anim/rns_standard_accelerate_interpolator.xml
++++ /dev/null
+@@ -1,6 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<pathInterpolator xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:controlX1="0.3"
+-    android:controlY1="0"
+-    android:controlX2="1"
+-    android:controlY2="1"/>
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/drawable/rns_rounder_top_corners_shape.xml b/node_modules/react-native-screens/android/src/main/res/base/drawable/rns_rounder_top_corners_shape.xml
+deleted file mode 100644
+index 238b3c0..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/drawable/rns_rounder_top_corners_shape.xml
++++ /dev/null
+@@ -1,8 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<shape xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:shape="rectangle">
+-    <corners
+-        android:topLeftRadius="8dp"
+-        android:topRightRadius="8dp"/>
+-    <solid android:color="#ffffff"/>
+-</shape>
+diff --git a/node_modules/react-native-screens/android/src/main/res/base/values/themes.xml b/node_modules/react-native-screens/android/src/main/res/base/values/themes.xml
+deleted file mode 100644
+index cbb9341..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/base/values/themes.xml
++++ /dev/null
+@@ -1,7 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<resources>
+-    <!-- Base application theme. -->
+-    <style name="custom" parent="Theme.Material3.DayNight.NoActionBar">
+-        <!-- Customize your theme here. -->
+-    </style>
+-</resources>
+diff --git a/node_modules/react-native-screens/android/src/main/res/v33/anim-v33/rns_default_enter_in.xml b/node_modules/react-native-screens/android/src/main/res/v33/anim-v33/rns_default_enter_in.xml
+deleted file mode 100644
+index 1767203..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/v33/anim-v33/rns_default_enter_in.xml
++++ /dev/null
+@@ -1,37 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-
+-<set xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:shareInterpolator="false">
+-
+-    <alpha
+-        android:fromAlpha="0.0"
+-        android:toAlpha="1.0"
+-        android:fillEnabled="true"
+-        android:fillBefore="true"
+-        android:fillAfter="true"
+-        android:interpolator="@android:anim/linear_interpolator"
+-        android:startOffset="50"
+-        android:duration="83" />
+-
+-    <translate
+-        android:fromXDelta="10%"
+-        android:toXDelta="0"
+-        android:fillEnabled="true"
+-        android:fillBefore="true"
+-        android:fillAfter="true"
+-        android:interpolator="@android:interpolator/fast_out_extra_slow_in"
+-        android:duration="450" />
+-
+-    <extend
+-        android:fromExtendLeft="10%"
+-        android:fromExtendTop="0"
+-        android:fromExtendRight="0"
+-        android:fromExtendBottom="0"
+-        android:toExtendLeft="10%"
+-        android:toExtendTop="0"
+-        android:toExtendRight="0"
+-        android:toExtendBottom="0"
+-        android:interpolator="@android:interpolator/fast_out_extra_slow_in"
+-        android:startOffset="0"
+-        android:duration="450" />
+-</set>
+diff --git a/node_modules/react-native-screens/android/src/main/res/v33/anim-v33/rns_default_enter_out.xml b/node_modules/react-native-screens/android/src/main/res/v33/anim-v33/rns_default_enter_out.xml
+deleted file mode 100644
+index e7dd72b..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/v33/anim-v33/rns_default_enter_out.xml
++++ /dev/null
+@@ -1,38 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-
+-<set xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:shareInterpolator="false">
+-
+-    <alpha
+-        android:fromAlpha="1.0"
+-        android:toAlpha="1.0"
+-        android:fillEnabled="true"
+-        android:fillBefore="true"
+-        android:fillAfter="true"
+-        android:interpolator="@anim/rns_standard_accelerate_interpolator"
+-        android:startOffset="0"
+-        android:duration="450" />
+-
+-    <translate
+-        android:fromXDelta="0"
+-        android:toXDelta="-10%"
+-        android:fillEnabled="true"
+-        android:fillBefore="true"
+-        android:fillAfter="true"
+-        android:interpolator="@android:interpolator/fast_out_extra_slow_in"
+-        android:startOffset="0"
+-        android:duration="450" />
+-
+-    <extend
+-        android:fromExtendLeft="0"
+-        android:fromExtendTop="0"
+-        android:fromExtendRight="10%"
+-        android:fromExtendBottom="0"
+-        android:toExtendLeft="0"
+-        android:toExtendTop="0"
+-        android:toExtendRight="10%"
+-        android:toExtendBottom="0"
+-        android:interpolator="@android:interpolator/fast_out_extra_slow_in"
+-        android:startOffset="0"
+-        android:duration="450" />
+-</set>
+diff --git a/node_modules/react-native-screens/android/src/main/res/v33/anim-v33/rns_default_exit_in.xml b/node_modules/react-native-screens/android/src/main/res/v33/anim-v33/rns_default_exit_in.xml
+deleted file mode 100644
+index 949ebb7..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/v33/anim-v33/rns_default_exit_in.xml
++++ /dev/null
+@@ -1,38 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-
+-<set xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:shareInterpolator="false">
+-
+-    <alpha
+-        android:fromAlpha="1.0"
+-        android:toAlpha="1.0"
+-        android:fillEnabled="true"
+-        android:fillBefore="true"
+-        android:fillAfter="true"
+-        android:interpolator="@android:interpolator/linear"
+-        android:startOffset="0"
+-        android:duration="450" />
+-
+-    <translate
+-        android:fromXDelta="-10%"
+-        android:toXDelta="0"
+-        android:fillEnabled="true"
+-        android:fillBefore="true"
+-        android:fillAfter="true"
+-        android:interpolator="@android:interpolator/fast_out_extra_slow_in"
+-        android:startOffset="0"
+-        android:duration="450" />
+-
+-    <extend
+-        android:fromExtendLeft="0"
+-        android:fromExtendTop="0"
+-        android:fromExtendRight="10%"
+-        android:fromExtendBottom="0"
+-        android:toExtendLeft="0"
+-        android:toExtendTop="0"
+-        android:toExtendRight="10%"
+-        android:toExtendBottom="0"
+-        android:interpolator="@android:interpolator/fast_out_extra_slow_in"
+-        android:startOffset="0"
+-        android:duration="450" />
+-</set>
+diff --git a/node_modules/react-native-screens/android/src/main/res/v33/anim-v33/rns_default_exit_out.xml b/node_modules/react-native-screens/android/src/main/res/v33/anim-v33/rns_default_exit_out.xml
+deleted file mode 100644
+index ba4d84d..0000000
+--- a/node_modules/react-native-screens/android/src/main/res/v33/anim-v33/rns_default_exit_out.xml
++++ /dev/null
+@@ -1,38 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-
+-<set xmlns:android="http://schemas.android.com/apk/res/android"
+-    android:shareInterpolator="false">
+-
+-    <alpha
+-        android:fromAlpha="1.0"
+-        android:toAlpha="0.0"
+-        android:fillEnabled="true"
+-        android:fillBefore="true"
+-        android:fillAfter="true"
+-        android:interpolator="@android:interpolator/linear"
+-        android:startOffset="35"
+-        android:duration="83" />
+-
+-    <translate
+-        android:fromXDelta="0"
+-        android:toXDelta="10%"
+-        android:fillEnabled="true"
+-        android:fillBefore="true"
+-        android:fillAfter="true"
+-        android:interpolator="@android:interpolator/fast_out_extra_slow_in"
+-        android:startOffset="0"
+-        android:duration="450" />
+-
+-    <extend
+-        android:fromExtendLeft="10%"
+-        android:fromExtendTop="0"
+-        android:fromExtendRight="0"
+-        android:fromExtendBottom="0"
+-        android:toExtendLeft="10%"
+-        android:toExtendTop="0"
+-        android:toExtendRight="0"
+-        android:toExtendBottom="0"
+-        android:interpolator="@android:interpolator/fast_out_extra_slow_in"
+-        android:startOffset="0"
+-        android:duration="450" />
+-</set>

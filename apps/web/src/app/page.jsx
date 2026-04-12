@@ -31,7 +31,8 @@ import { format } from "date-fns";
 export default function DashboardPage() {
   const [activeWard, setActiveWard] = useState("all");
 
-  const { data: residents = [], isLoading } = useQuery({
+
+  const { data: rawResidents, isLoading } = useQuery({
     queryKey: ["residents"],
     queryFn: async () => {
       const response = await fetch("/api/residents");
@@ -39,7 +40,10 @@ export default function DashboardPage() {
     },
   });
 
-  const { data: alerts = [] } = useQuery({
+  // Ensure residents is always an array
+  const residents = Array.isArray(rawResidents) ? rawResidents : [];
+
+  const { data: rawAlerts } = useQuery({
     queryKey: ["alerts"],
     queryFn: async () => {
       const response = await fetch("/api/alerts?status=open");
@@ -47,6 +51,8 @@ export default function DashboardPage() {
     },
   });
 
+  // Ensure alerts is always an array
+  const alerts = Array.isArray(rawAlerts) ? rawAlerts : [];
   const criticalAlerts = alerts.filter((a) => a.severity === "critical");
   const inRangePercentage = 85; // Mock analytic
 

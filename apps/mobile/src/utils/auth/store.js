@@ -11,9 +11,13 @@ export const useAuthStore = create((set) => ({
   auth: null,
   setAuth: (auth) => {
     if (auth) {
-      SecureStore.setItemAsync(authKey, JSON.stringify(auth));
+      try {
+        SecureStore.setItemAsync(authKey, JSON.stringify(auth));
+      } catch (e) {
+        console.warn('Failed to persist auth:', e);
+      }
     } else {
-      SecureStore.deleteItemAsync(authKey);
+      SecureStore.deleteItemAsync(authKey).catch(() => {});
     }
     set({ auth });
   },

@@ -17,15 +17,29 @@ export const useAuth = () => {
   const { isOpen, close, open } = useAuthModal();
 
   const initiate = useCallback(() => {
-    SecureStore.getItemAsync(authKey).then((auth) => {
-      useAuthStore.setState({
-        auth: auth ? JSON.parse(auth) : null,
-        isReady: true,
+    SecureStore.getItemAsync(authKey)
+      .then((raw) => {
+        let parsed = null;
+        if (raw) {
+          try {
+            parsed = JSON.parse(raw);
+          } catch {
+            parsed = null;
+          }
+        }
+        useAuthStore.setState({
+          auth: parsed,
+          isReady: true,
+        });
+      })
+      .catch(() => {
+        useAuthStore.setState({ auth: null, isReady: true });
       });
-    });
   }, []);
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    if (!isReady) initiate();
+  }, [isReady, initiate]);
 
   const signIn = useCallback(() => {
     open({ mode: 'signin' });

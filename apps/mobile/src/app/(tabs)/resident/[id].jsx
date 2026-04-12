@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useCallback } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,9 +12,59 @@ import {
   Plus,
   CheckCircle2,
   Clock,
+  MapPin,
+  Calendar,
+  FileText,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Image } from "expo-image";
+import { colors, radius, typography, shadows } from "../../../theme";
+import { mockResidents, mockReadings, mockTasks } from "../../../mockData";
+import Avatar from "../../../components/Avatar";
+import StatusBadge from "../../../components/StatusBadge";
+import Card from "../../../components/Card";
+import SectionHeader from "../../../components/SectionHeader";
+import EmptyState from "../../../components/EmptyState";
+
+const VITAL_CONFIG = {
+  glucose: {
+    label: "Glucose",
+    unit: "mg/dL",
+    icon: Droplet,
+    iconColor: "#EF4444",
+    bg: "#FEF2F2",
+    getStatus: (v) => (v > 180 ? "high" : v < 70 ? "low" : "normal"),
+  },
+  hr: {
+    label: "Heart Rate",
+    unit: "bpm",
+    icon: Heart,
+    iconColor: "#DC2626",
+    bg: "#FFF1F2",
+    getStatus: (v) => (v > 100 ? "high" : v < 60 ? "low" : "normal"),
+  },
+  spo2: {
+    label: "SpO2",
+    unit: "%",
+    icon: Wind,
+    iconColor: colors.primary,
+    bg: colors.primaryLight,
+    getStatus: (v) => (v < 95 ? "low" : "normal"),
+  },
+  bp_systolic: {
+    label: "Blood Pressure",
+    unit: "mmHg",
+    icon: Activity,
+    iconColor: "#7C3AED",
+    bg: "#F5F3FF",
+    getStatus: (v) => (v > 140 ? "high" : v < 90 ? "low" : "normal"),
+  },
+};
+
+const STATUS_COLORS = {
+  high: colors.statusCritical,
+  low: colors.statusWarning,
+  normal: colors.statusStable,
+};
 
 export default function ResidentDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -22,12 +72,14 @@ export default function ResidentDetailScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: residents = [] } = useQuery({
+  const { data: residents = mockResidents } = useQuery({
     queryKey: ["residents"],
     queryFn: async () => {
       const response = await fetch("/api/residents");
+      if (!response.ok) throw new Error(`Residents fetch failed: ${response.status}`);
       return response.json();
     },
+    placeholderData: mockResidents,
   });
 
   const resident = residents.find((r) => r.id.toString() === id);
@@ -36,18 +88,26 @@ export default function ResidentDetailScreen() {
     queryKey: ["readings", id],
     queryFn: async () => {
       const response = await fetch(`/api/readings?residentId=${id}`);
+      if (!response.ok) throw new Error(`Readings fetch failed: ${response.status}`);
       return response.json();
     },
     enabled: !!id,
+    placeholderData: mockReadings.filter(
+      (r) => r.resident_id?.toString() === id
+    ),
   });
 
   const { data: tasks = [] } = useQuery({
     queryKey: ["tasks", id],
     queryFn: async () => {
       const response = await fetch(`/api/tasks?residentId=${id}&status=all`);
+      if (!response.ok) throw new Error(`Tasks fetch failed: ${response.status}`);
       return response.json();
     },
     enabled: !!id,
+    placeholderData: mockTasks.filter(
+      (t) => t.resident_id?.toString() === id && t.status === "pending"
+    ),
   });
 
   const addReadingMutation = useMutation({
@@ -57,6 +117,7 @@ export default function ResidentDetailScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...reading, resident_id: id }),
       });
+      if (!response.ok) throw new Error(`Reading add failed: ${response.status}`);
       return response.json();
     },
     onSuccess: () => {
@@ -64,13 +125,32 @@ export default function ResidentDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ["residents"] });
       Alert.alert(
         "Reading Recorded",
-        "Data synced successfully via BLE simulation.",
+        "Data synced successfully via BLE simulation."
       );
     },
   });
 
+  const toggleTaskMutation = useMutation({
+    mutationFn: async (task) => {
+      const newStatus = task.status === "completed" ? "pending" : "completed";
+      const response = await fetch("/api/tasks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: task.id, status: newStatus }),
+      });
+      if (!response.ok) throw new Error(`Task toggle failed: ${response.status}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+    onError: (err) => {
+      Alert.alert("Error", "Failed to update task. Please try again.");
+    },
+  });
+
   const simulateBLEReading = useCallback(() => {
-    // BLE Simulation logic
     const metrics = ["glucose", "hr", "spo2", "bp_systolic"];
     const randomMetric = metrics[Math.floor(Math.random() * metrics.length)];
     const valueMap = {
@@ -97,275 +177,299 @@ export default function ResidentDetailScreen() {
 
   if (!resident) return null;
 
+  const pendingTasks = tasks.filter((t) => t.status === "pending");
+
   return (
     <View
-      style={{ flex: 1, backgroundColor: "#F9FAFB", paddingTop: insets.top }}
+      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}
     >
-      {/* Custom Header */}
+      {/* Header */}
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          paddingHorizontal: 20,
-          paddingBottom: 20,
+          paddingHorizontal: 16,
+          paddingVertical: 10,
+          backgroundColor: colors.surface,
+          ...shadows.sm,
         }}
       >
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
-          <ArrowLeft size={32} color="#111827" />
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={12}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            backgroundColor: colors.surfaceSecondary,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <ArrowLeft size={20} color={colors.text} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 24, fontWeight: "bold", color: "#111827" }}>
+        <Text style={[typography.headline, { color: colors.text }]}>
           Resident Detail
         </Text>
         <TouchableOpacity
           onPress={simulateBLEReading}
+          activeOpacity={0.7}
           style={{
-            backgroundColor: "#EFF6FF",
-            padding: 10,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: "#BFDBFE",
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            backgroundColor: colors.primaryLight,
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          <Bluetooth size={24} color="#2563EB" />
+          <Bluetooth size={18} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Card */}
-        <View
-          style={{
-            backgroundColor: "#FFFFFF",
-            margin: 20,
-            borderRadius: 32,
-            padding: 24,
-            flexDirection: "row",
-            alignItems: "center",
-            borderWidth: 1,
-            borderColor: "#E5E7EB",
-          }}
-        >
-          <Image
-            source={{
-              uri:
-                resident.photo_url ||
-                "https://images.unsplash.com/photo-1551076805-e1869033e561?w=200&h=200&fit=crop",
-            }}
-            style={{ width: 100, height: 100, borderRadius: 50 }}
-            contentFit="cover"
-          />
-          <View style={{ marginLeft: 20 }}>
-            <Text
-              style={{ fontSize: 28, fontWeight: "bold", color: "#111827" }}
-            >
-              {resident.name}
-            </Text>
-            <Text style={{ fontSize: 20, color: "#6B7280" }}>
-              Room {resident.room}
-            </Text>
-            <View
-              style={{
-                marginTop: 8,
-                paddingHorizontal: 12,
-                paddingVertical: 4,
-                borderRadius: 8,
-                backgroundColor:
-                  resident.status === "stable" ? "#DCFCE7" : "#FEE2E2",
-                alignSelf: "flex-start",
-              }}
-            >
-              <Text
+        <Card variant="elevated" style={{ marginBottom: 20 }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Avatar name={resident.name} size={64} />
+            <View style={{ marginLeft: 16, flex: 1 }}>
+              <Text style={[typography.title3, { color: colors.text }]}>
+                {resident.name}
+              </Text>
+              <View
                 style={{
-                  fontSize: 16,
-                  fontWeight: "600",
-                  color: resident.status === "stable" ? "#166534" : "#991B1B",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 4,
+                  marginTop: 2,
                 }}
               >
-                {resident.status.toUpperCase()}
-              </Text>
+                <MapPin size={13} color={colors.textTertiary} />
+                <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+                  Room {resident.room}
+                </Text>
+              </View>
+              <StatusBadge status={resident.status} style={{ marginTop: 6 }} />
             </View>
           </View>
-        </View>
 
-        {/* Vitals Grid */}
-        <Text
-          style={{
-            fontSize: 24,
-            fontWeight: "bold",
-            color: "#111827",
-            marginHorizontal: 20,
-            marginBottom: 12,
-          }}
-        >
-          Latest Vitals
-        </Text>
+          {/* Quick info row */}
+          {(resident.age || resident.conditions) && (
+            <View
+              style={{
+                flexDirection: "row",
+                marginTop: 14,
+                paddingTop: 14,
+                borderTopWidth: 1,
+                borderColor: colors.borderLight,
+                gap: 16,
+              }}
+            >
+              {resident.age && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                  <Calendar size={13} color={colors.textMuted} />
+                  <Text style={{ fontSize: 13, color: colors.textSecondary }}>
+                    Age {resident.age}
+                  </Text>
+                </View>
+              )}
+              {resident.conditions && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 5,
+                    flex: 1,
+                  }}
+                >
+                  <FileText size={13} color={colors.textMuted} />
+                  <Text
+                    numberOfLines={1}
+                    style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }}
+                  >
+                    {resident.conditions}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </Card>
+
+        {/* Vitals */}
+        <SectionHeader title="Latest Vitals" style={{ marginBottom: 12 }} />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={{ flexGrow: 0 }}
+          style={{ flexGrow: 0, marginHorizontal: -20 }}
+          contentContainerStyle={{ paddingHorizontal: 20 }}
         >
-          <View style={{ flexDirection: "row", paddingLeft: 20 }}>
-            <VitalCard
-              label="Glucose"
-              value={
-                readings.find((r) => r.metric === "glucose")?.value || "--"
-              }
-              unit="mg/dL"
-              icon={<Droplet size={32} color="#EF4444" />}
-              color="#FEF2F2"
-            />
-            <VitalCard
-              label="Heart Rate"
-              value={readings.find((r) => r.metric === "hr")?.value || "--"}
-              unit="bpm"
-              icon={<Heart size={32} color="#DC2626" />}
-              color="#FFF1F2"
-            />
-            <VitalCard
-              label="SpO2"
-              value={readings.find((r) => r.metric === "spo2")?.value || "--"}
-              unit="%"
-              icon={<Wind size={32} color="#2563EB" />}
-              color="#EFF6FF"
-            />
-            <VitalCard
-              label="Blood Pressure"
-              value={
-                readings.find((r) => r.metric === "bp_systolic")?.value || "--"
-              }
-              unit="mmHg"
-              icon={<Activity size={32} color="#7C3AED" />}
-              color="#F5F3FF"
-              style={{ marginRight: 20 }}
-            />
-          </View>
-        </ScrollView>
+          {Object.entries(VITAL_CONFIG).map(([metric, config]) => {
+            const reading = readings.find((r) => r.metric === metric);
+            const val = reading?.value;
+            const IconComp = config.icon;
+            const status = val != null ? config.getStatus(val) : null;
 
-        {/* Tasks Section */}
-        <View style={{ marginTop: 32, paddingHorizontal: 20 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 16,
-            }}
-          >
-            <Text
-              style={{ fontSize: 24, fontWeight: "bold", color: "#111827" }}
-            >
-              Pending Tasks
-            </Text>
-            <TouchableOpacity style={{ padding: 8 }}>
-              <Plus size={28} color="#2563EB" />
-            </TouchableOpacity>
-          </View>
-
-          {tasks
-            .filter((t) => t.status === "pending")
-            .map((task) => (
-              <TouchableOpacity
-                key={task.id}
+            return (
+              <View
+                key={metric}
                 style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: 20,
-                  padding: 20,
-                  marginBottom: 12,
-                  flexDirection: "row",
-                  alignItems: "center",
+                  width: 140,
+                  backgroundColor: colors.surface,
+                  borderRadius: radius.xl,
+                  padding: 14,
+                  marginRight: 12,
                   borderWidth: 1,
-                  borderColor: "#E5E7EB",
+                  borderColor: colors.surfaceBorder,
+                  ...shadows.sm,
                 }}
               >
                 <View
                   style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 24,
-                    backgroundColor: "#F3F4F6",
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    backgroundColor: config.bg,
                     alignItems: "center",
                     justifyContent: "center",
+                    marginBottom: 10,
                   }}
                 >
-                  <Clock size={24} color="#6B7280" />
+                  <IconComp size={22} color={config.iconColor} />
                 </View>
-                <View style={{ flex: 1, marginLeft: 16 }}>
-                  <Text
-                    style={{
-                      fontSize: 20,
-                      fontWeight: "600",
-                      color: "#111827",
-                    }}
-                  >
-                    {task.title}
-                  </Text>
-                  <Text style={{ fontSize: 16, color: "#6B7280" }}>
-                    Due Today
-                  </Text>
-                </View>
-                <CheckCircle2 size={28} color="#D1D5DB" />
+                <Text
+                  style={{
+                    fontSize: 26,
+                    fontWeight: "700",
+                    color: status ? STATUS_COLORS[status] : colors.text,
+                  }}
+                >
+                  {val ?? "--"}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: colors.textMuted,
+                    fontWeight: "500",
+                  }}
+                >
+                  {config.unit}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: colors.textSecondary,
+                    fontWeight: "600",
+                    marginTop: 2,
+                  }}
+                >
+                  {config.label}
+                </Text>
+              </View>
+            );
+          })}
+        </ScrollView>
+
+        {/* Tasks */}
+        <View style={{ marginTop: 24 }}>
+          <SectionHeader
+            title="Pending Tasks"
+            subtitle={`${pendingTasks.length} remaining`}
+            right={
+              <TouchableOpacity
+                hitSlop={8}
+                onPress={() =>
+                  Alert.alert("Add Task", "Create a new task for this resident?", [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Add", onPress: () => Alert.alert("Coming Soon", "Task creation will be available in a future update.") },
+                  ])
+                }
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  backgroundColor: colors.primaryLight,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Plus size={16} color={colors.primary} />
               </TouchableOpacity>
-            ))}
+            }
+            style={{ marginBottom: 12 }}
+          />
+
+          {pendingTasks.length === 0 ? (
+            <EmptyState
+              icon={<CheckCircle2 size={32} color={colors.statusStable} />}
+              title="All caught up!"
+              subtitle="No pending tasks for this resident"
+            />
+          ) : (
+            pendingTasks.map((task) => (
+              <TouchableOpacity
+                key={task.id}
+                activeOpacity={0.7}
+                onPress={() => {
+                  Alert.alert(
+                    "Complete Task",
+                    `Mark "${task.title}" as completed?`,
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Complete",
+                        onPress: () => toggleTaskMutation.mutate(task),
+                      },
+                    ]
+                  );
+                }}
+              >
+                <Card style={{ marginBottom: 10 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 10,
+                        backgroundColor: colors.surfaceSecondary,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Clock size={18} color={colors.textSecondary} />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text
+                        style={{
+                          fontSize: 15,
+                          fontWeight: "600",
+                          color: colors.text,
+                        }}
+                      >
+                        {task.title}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          color: colors.textTertiary,
+                          marginTop: 1,
+                        }}
+                      >
+                        Due Today
+                      </Text>
+                    </View>
+                    <CheckCircle2 size={22} color={colors.divider} />
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
-    </View>
-  );
-}
-
-function VitalCard({ label, value, unit, icon, color, style }) {
-  return (
-    <View
-      style={[
-        {
-          width: 160,
-          backgroundColor: "#FFFFFF",
-          borderRadius: 24,
-          padding: 20,
-          marginRight: 16,
-          borderWidth: 1,
-          borderColor: "#E5E7EB",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 5,
-          elevation: 1,
-        },
-        style,
-      ]}
-    >
-      <View
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: 16,
-          backgroundColor: color,
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 16,
-        }}
-      >
-        {icon}
-      </View>
-      <Text style={{ fontSize: 32, fontWeight: "bold", color: "#111827" }}>
-        {value}
-      </Text>
-      <Text style={{ fontSize: 16, color: "#6B7280", fontWeight: "500" }}>
-        {unit}
-      </Text>
-      <Text
-        style={{
-          fontSize: 18,
-          color: "#374151",
-          fontWeight: "600",
-          marginTop: 4,
-        }}
-      >
-        {label}
-      </Text>
     </View>
   );
 }

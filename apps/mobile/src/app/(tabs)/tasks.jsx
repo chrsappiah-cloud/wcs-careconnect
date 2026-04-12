@@ -1,24 +1,50 @@
 import React from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+} from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
   Circle,
   Clock,
   ClipboardList,
+  AlertCircle,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { formatDistanceToNow } from "date-fns";
+import { colors, radius, shadows, typography } from "../../theme";
+import { mockTasks } from "../../mockData";
+import Card from "../../components/Card";
+import EmptyState from "../../components/EmptyState";
+import { SkeletonList } from "../../components/Skeleton";
+
+const PRIORITY_CONFIG = {
+  high: { color: colors.danger, bg: colors.dangerLight, label: "High" },
+  medium: { color: colors.warning, bg: colors.warningLight, label: "Med" },
+  low: { color: colors.primary, bg: colors.primaryLight, label: "Low" },
+};
 
 export default function TasksScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
 
-  const { data: tasks = [], isLoading } = useQuery({
+  const {
+    data: tasks = mockTasks,
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useQuery({
     queryKey: ["tasks"],
     queryFn: async () => {
       const response = await fetch("/api/tasks?status=all");
+      if (!response.ok) throw new Error(`Tasks fetch failed: ${response.status}`);
       return response.json();
     },
+    placeholderData: mockTasks,
   });
 
   const toggleTaskMutation = useMutation({
@@ -31,6 +57,7 @@ export default function TasksScreen() {
           status: status === "completed" ? "pending" : "completed",
         }),
       });
+      if (!response.ok) throw new Error(`Task update failed: ${response.status}`);
       return response.json();
     },
     onSuccess: () => {
@@ -43,47 +70,95 @@ export default function TasksScreen() {
 
   return (
     <View
-      style={{ flex: 1, backgroundColor: "#F9FAFB", paddingTop: insets.top }}
+      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}
     >
-      <View style={{ padding: 20 }}>
-        <Text
-          style={{
-            fontSize: 32,
-            fontWeight: "bold",
-            color: "#111827",
-            marginBottom: 8,
-          }}
-        >
-          My Tasks
+      {/* Header */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
+        <Text style={[typography.largeTitle, { color: colors.text }]}>
+          Tasks
         </Text>
-        <Text style={{ fontSize: 18, color: "#6B7280" }}>
-          {pendingTasks.length} tasks remaining for today
-        </Text>
+
+        {/* Progress bar */}
+        {tasks.length > 0 && (
+          <View style={{ marginTop: 12, marginBottom: 8 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+              <Text style={{ fontSize: 14, color: colors.textTertiary, fontWeight: "500" }}>
+                {completedTasks.length} of {tasks.length} completed
+              </Text>
+              <Text style={{ fontSize: 14, color: colors.primary, fontWeight: "700" }}>
+                {tasks.length > 0
+                  ? Math.round((completedTasks.length / tasks.length) * 100)
+                  : 0}
+                %
+              </Text>
+            </View>
+            <View
+              style={{
+                height: 6,
+                backgroundColor: colors.surfaceSecondary,
+                borderRadius: 3,
+                overflow: "hidden",
+              }}
+            >
+              <View
+                style={{
+                  height: 6,
+                  width: tasks.length > 0
+                    ? `${(completedTasks.length / tasks.length) * 100}%`
+                    : "0%",
+                  backgroundColor: colors.primary,
+                  borderRadius: 3,
+                }}
+              />
+            </View>
+          </View>
+        )}
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor={colors.primary}
+          />
+        }
       >
-        {isLoading ? (
-          <Text style={{ fontSize: 20, textAlign: "center", color: "#6B7280" }}>
-            Loading tasks...
-          </Text>
+        {isLoading && !tasks.length ? (
+          <SkeletonList count={4} />
+        ) : tasks.length === 0 ? (
+          <EmptyState
+            icon={<ClipboardList size={40} color={colors.textMuted} />}
+            title="No tasks assigned"
+            subtitle="You're all caught up for today"
+          />
         ) : (
           <>
+            {/* Pending section */}
             {pendingTasks.length > 0 && (
-              <View style={{ marginBottom: 32 }}>
-                <Text
-                  style={{
-                    fontSize: 22,
-                    fontWeight: "bold",
-                    color: "#374151",
-                    marginBottom: 16,
-                  }}
-                >
-                  Pending
-                </Text>
+              <View style={{ marginBottom: 24 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <View
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      backgroundColor: colors.primaryLight,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>
+                      {pendingTasks.length}
+                    </Text>
+                  </View>
+                  <Text style={[typography.headline, { color: colors.textSecondary }]}>
+                    Pending
+                  </Text>
+                </View>
                 {pendingTasks.map((task) => (
                   <TaskItem
                     key={task.id}
@@ -94,18 +169,26 @@ export default function TasksScreen() {
               </View>
             )}
 
+            {/* Completed section */}
             {completedTasks.length > 0 && (
               <View>
-                <Text
-                  style={{
-                    fontSize: 22,
-                    fontWeight: "bold",
-                    color: "#9CA3AF",
-                    marginBottom: 16,
-                  }}
-                >
-                  Completed
-                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <View
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      backgroundColor: colors.successLight,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <CheckCircle2 size={14} color={colors.success} />
+                  </View>
+                  <Text style={[typography.headline, { color: colors.textMuted }]}>
+                    Completed
+                  </Text>
+                </View>
                 {completedTasks.map((task) => (
                   <TaskItem
                     key={task.id}
@@ -113,22 +196,6 @@ export default function TasksScreen() {
                     onToggle={() => toggleTaskMutation.mutate(task)}
                   />
                 ))}
-              </View>
-            )}
-
-            {tasks.length === 0 && (
-              <View style={{ alignItems: "center", marginTop: 100 }}>
-                <ClipboardList size={80} color="#D1D5DB" />
-                <Text
-                  style={{
-                    fontSize: 24,
-                    fontWeight: "bold",
-                    color: "#111827",
-                    marginTop: 20,
-                  }}
-                >
-                  No tasks assigned
-                </Text>
               </View>
             )}
           </>
@@ -140,54 +207,91 @@ export default function TasksScreen() {
 
 function TaskItem({ task, onToggle }) {
   const isCompleted = task.status === "completed";
+  const priority = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
 
   return (
     <TouchableOpacity
       onPress={onToggle}
-      style={{
-        backgroundColor: "#FFFFFF",
-        borderRadius: 24,
-        padding: 24,
-        marginBottom: 16,
-        flexDirection: "row",
-        alignItems: "center",
-        borderWidth: 1,
-        borderColor: isCompleted ? "#E5E7EB" : "#DBEAFE",
-        opacity: isCompleted ? 0.6 : 1,
-      }}
+      activeOpacity={0.7}
+      style={{ marginBottom: 10 }}
     >
-      <View
+      <Card
         style={{
-          width: 48,
-          height: 48,
-          borderRadius: 24,
-          backgroundColor: isCompleted ? "#F3F4F6" : "#EFF6FF",
-          alignItems: "center",
-          justifyContent: "center",
-          marginRight: 20,
+          padding: 16,
+          opacity: isCompleted ? 0.55 : 1,
+          borderLeftWidth: isCompleted ? 0 : 3,
+          borderLeftColor: isCompleted ? "transparent" : priority.color,
         }}
       >
-        {isCompleted ? (
-          <CheckCircle2 size={28} color="#10B981" />
-        ) : (
-          <Circle size={28} color="#2563EB" />
-        )}
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            fontSize: 22,
-            fontWeight: "bold",
-            color: isCompleted ? "#6B7280" : "#111827",
-            textDecorationLine: isCompleted ? "line-through" : "none",
-          }}
-        >
-          {task.title}
-        </Text>
-        <Text style={{ fontSize: 18, color: "#6B7280", marginTop: 4 }}>
-          {task.resident_name} • Room 101
-        </Text>
-      </View>
+        <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+          {/* Check icon */}
+          <View style={{ marginRight: 14, marginTop: 2 }}>
+            {isCompleted ? (
+              <CheckCircle2 size={24} color={colors.success} />
+            ) : (
+              <Circle size={24} color={colors.primary} />
+            )}
+          </View>
+
+          {/* Content */}
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "600",
+                color: isCompleted ? colors.textMuted : colors.text,
+                textDecorationLine: isCompleted ? "line-through" : "none",
+                lineHeight: 22,
+              }}
+            >
+              {task.title}
+            </Text>
+            {task.description && !isCompleted && (
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: colors.textTertiary,
+                  marginTop: 4,
+                  lineHeight: 20,
+                }}
+                numberOfLines={2}
+              >
+                {task.description}
+              </Text>
+            )}
+
+            {/* Meta row */}
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, gap: 10 }}>
+              {!isCompleted && task.priority && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: priority.bg,
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: radius.sm,
+                    gap: 4,
+                  }}
+                >
+                  {task.priority === "high" && <AlertCircle size={12} color={priority.color} />}
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: priority.color }}>
+                    {priority.label}
+                  </Text>
+                </View>
+              )}
+              {task.due_at && !isCompleted && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Clock size={12} color={colors.textMuted} />
+                  <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                    Due {formatDistanceToNow(new Date(task.due_at), { addSuffix: true })}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+      </Card>
     </TouchableOpacity>
   );
 }

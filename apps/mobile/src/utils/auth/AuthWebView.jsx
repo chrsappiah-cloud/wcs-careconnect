@@ -85,11 +85,20 @@ export const AuthWebView = ({ mode, proxyURL, baseURL }) => {
       }}
       onShouldStartLoadWithRequest={(request) => {
         if (request.url === `${baseURL}${callbackUrl}`) {
-          fetch(request.url).then(async (response) => {
-            response.json().then((data) => {
-              setAuth({ jwt: data.jwt, user: data.user });
+          fetch(request.url)
+            .then(async (response) => {
+              if (!response.ok) {
+                console.error('Auth callback failed:', response.status);
+                return;
+              }
+              const data = await response.json();
+              if (data?.jwt) {
+                setAuth({ jwt: data.jwt, user: data.user });
+              }
+            })
+            .catch((err) => {
+              console.error('Auth callback error:', err);
             });
-          });
           return false;
         }
         if (request.url === currentURI) return true;

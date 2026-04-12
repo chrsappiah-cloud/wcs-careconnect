@@ -1,56 +1,49 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Image,
+  RefreshControl,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import {
   Search,
   MapPin,
-  AlertCircle,
   ChevronRight,
-  Users,
+  Droplet,
+  Activity,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-
-const STATUS_COLORS = {
-  stable: {
-    bg: "#F0FDF4",
-    text: "#166534",
-    border: "#BBF7D0",
-    icon: "#22C55E",
-  },
-  warning: {
-    bg: "#FFFBEB",
-    text: "#92400E",
-    border: "#FEF3C7",
-    icon: "#F59E0B",
-  },
-  critical: {
-    bg: "#FEF2F2",
-    text: "#991B1B",
-    border: "#FEE2E2",
-    icon: "#EF4444",
-  },
-};
+import { colors, radius, shadows, typography } from "../../theme";
+import { mockResidents } from "../../mockData";
+import Avatar from "../../components/Avatar";
+import StatusBadge from "../../components/StatusBadge";
+import Card from "../../components/Card";
+import EmptyState from "../../components/EmptyState";
+import { SkeletonList } from "../../components/Skeleton";
 
 export default function ResidentsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
 
-  const { data: residents = [], isLoading } = useQuery({
+  const {
+    data: residents = mockResidents,
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useQuery({
     queryKey: ["residents"],
     queryFn: async () => {
       const response = await fetch("/api/residents");
       if (!response.ok) throw new Error("Failed to fetch");
       return response.json();
     },
+    placeholderData: mockResidents,
   });
 
   const filteredResidents = residents.filter(
@@ -59,174 +52,254 @@ export default function ResidentsScreen() {
       r.room.toLowerCase().includes(search.toLowerCase()),
   );
 
+  const statusCounts = residents.reduce(
+    (acc, r) => {
+      acc[r.status] = (acc[r.status] || 0) + 1;
+      return acc;
+    },
+    {},
+  );
+
   return (
     <View
-      style={{ flex: 1, backgroundColor: "#F9FAFB", paddingTop: insets.top }}
+      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}
     >
-      <View style={{ padding: 20 }}>
-        <Text
-          style={{
-            fontSize: 32,
-            fontWeight: "bold",
-            color: "#111827",
-            marginBottom: 16,
-          }}
-        >
-          Residents
-        </Text>
+      {/* Header */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <Text style={[typography.largeTitle, { color: colors.text }]}>
+            Residents
+          </Text>
+          <View
+            style={{
+              backgroundColor: colors.primaryLight,
+              paddingHorizontal: 14,
+              paddingVertical: 6,
+              borderRadius: radius.full,
+            }}
+          >
+            <Text style={{ fontSize: 15, fontWeight: "700", color: colors.primary }}>
+              {residents.length} total
+            </Text>
+          </View>
+        </View>
 
+        {/* Status summary pills */}
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 16, marginTop: 8 }}>
+          {[
+            { key: "stable", label: "Stable", color: colors.success, bg: colors.successLight },
+            { key: "warning", label: "Warning", color: colors.warningDark, bg: colors.warningLight },
+            { key: "critical", label: "Critical", color: colors.danger, bg: colors.dangerLight },
+          ].map((s) => (
+            <View
+              key={s.key}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: s.bg,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: radius.full,
+                gap: 6,
+              }}
+            >
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: s.color,
+                }}
+              />
+              <Text style={{ fontSize: 13, fontWeight: "600", color: s.color }}>
+                {statusCounts[s.key] || 0} {s.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Search bar */}
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
-            backgroundColor: "#FFFFFF",
-            borderRadius: 16,
+            backgroundColor: colors.surface,
+            borderRadius: radius.lg,
             paddingHorizontal: 16,
-            height: 60,
-            borderWidth: 1,
-            borderColor: "#E5E7EB",
-            marginBottom: 20,
+            height: 52,
+            borderWidth: 1.5,
+            borderColor: searchFocused ? colors.primary : colors.surfaceBorder,
+            marginBottom: 8,
+            ...shadows.sm,
           }}
         >
-          <Search size={24} color="#6B7280" />
+          <Search size={20} color={searchFocused ? colors.primary : colors.textMuted} />
           <TextInput
             placeholder="Search by name or room..."
+            placeholderTextColor={colors.textMuted}
             value={search}
             onChangeText={setSearch}
-            style={{ flex: 1, marginLeft: 12, fontSize: 20, color: "#111827" }}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            style={{ flex: 1, marginLeft: 12, fontSize: 17, color: colors.text }}
           />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch("")}>
+              <Text style={{ fontSize: 14, color: colors.primary, fontWeight: "600" }}>Clear</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor={colors.primary}
+          />
+        }
       >
-        {isLoading ? (
-          <Text style={{ fontSize: 20, textAlign: "center", color: "#6B7280" }}>
-            Loading residents...
-          </Text>
+        {isLoading && !residents.length ? (
+          <SkeletonList count={4} />
         ) : filteredResidents.length === 0 ? (
-          <Text style={{ fontSize: 20, textAlign: "center", color: "#6B7280" }}>
-            No residents found.
-          </Text>
+          <EmptyState
+            icon={<Search size={36} color={colors.textMuted} />}
+            title="No residents found"
+            subtitle={search ? `No results for "${search}"` : "No residents available"}
+          />
         ) : (
           filteredResidents.map((resident) => {
-            const statusStyle =
-              STATUS_COLORS[resident.status] || STATUS_COLORS.stable;
-            const latestGlucose = resident.latest_readings?.find(
-              (r) => r.metric === "glucose",
-            );
+            const glucoseValue = resident.latest_glucose?.value;
+            const isHighGlucose = glucoseValue && glucoseValue > 180;
+            const isLowGlucose = glucoseValue && glucoseValue < 70;
 
             return (
               <TouchableOpacity
                 key={resident.id}
+                activeOpacity={0.7}
                 onPress={() =>
                   router.navigate(`/(tabs)/resident/${resident.id}`)
                 }
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: 24,
-                  padding: 24,
-                  marginBottom: 20,
-                  borderWidth: 2,
-                  borderColor: statusStyle.border,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 10,
-                  elevation: 2,
-                }}
+                style={{ marginBottom: 12 }}
               >
-                <View style={{ position: "relative" }}>
-                  <View
-                    style={{
-                      width: 80,
-                      height: 80,
-                      borderRadius: 40,
-                      backgroundColor: "#E5E7EB",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {resident.photo_url ? (
-                      <Image
-                        source={{ uri: resident.photo_url }}
-                        style={{ width: 80, height: 80 }}
+                <Card variant="elevated" style={{ padding: 16 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    {/* Avatar with status dot */}
+                    <View style={{ position: "relative" }}>
+                      <Avatar
+                        name={resident.name}
+                        uri={resident.photo_url}
+                        size={60}
                       />
-                    ) : (
-                      <Users size={40} color="#9CA3AF" />
-                    )}
-                  </View>
-                  <View
-                    style={{
-                      position: "absolute",
-                      bottom: 0,
-                      right: 0,
-                      width: 24,
-                      height: 24,
-                      borderRadius: 12,
-                      backgroundColor: statusStyle.icon,
-                      borderWidth: 3,
-                      borderColor: "#FFFFFF",
-                    }}
-                  />
-                </View>
-
-                <View style={{ flex: 1, marginLeft: 20 }}>
-                  <Text
-                    style={{
-                      fontSize: 24,
-                      fontWeight: "bold",
-                      color: "#111827",
-                    }}
-                  >
-                    {resident.name}
-                  </Text>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginTop: 4,
-                    }}
-                  >
-                    <MapPin size={18} color="#6B7280" />
-                    <Text
-                      style={{ fontSize: 18, color: "#6B7280", marginLeft: 4 }}
-                    >
-                      {resident.room}
-                    </Text>
-                  </View>
-
-                  {latestGlucose && (
-                    <View
-                      style={{
-                        marginTop: 12,
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
-                        borderRadius: 12,
-                        backgroundColor: statusStyle.bg,
-                        alignSelf: "flex-start",
-                      }}
-                    >
-                      <Text
+                      <View
                         style={{
-                          fontSize: 18,
-                          fontWeight: "700",
-                          color: statusStyle.text,
+                          position: "absolute",
+                          bottom: 0,
+                          right: 0,
+                          width: 18,
+                          height: 18,
+                          borderRadius: 9,
+                          backgroundColor: colors.status[resident.status]?.color || colors.success,
+                          borderWidth: 2.5,
+                          borderColor: colors.surface,
+                        }}
+                      />
+                    </View>
+
+                    {/* Info */}
+                    <View style={{ flex: 1, marginLeft: 14 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <Text
+                          style={{
+                            fontSize: 18,
+                            fontWeight: "700",
+                            color: colors.text,
+                            flex: 1,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {resident.name}
+                        </Text>
+                        <StatusBadge status={resident.status} size="sm" />
+                      </View>
+
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginTop: 4,
+                          gap: 4,
                         }}
                       >
-                        Glucose: {latestGlucose.value} mg/dL
-                      </Text>
-                    </View>
-                  )}
-                </View>
+                        <MapPin size={14} color={colors.textTertiary} />
+                        <Text
+                          style={{ fontSize: 14, color: colors.textTertiary }}
+                        >
+                          Room {resident.room}
+                        </Text>
+                        {resident.age && (
+                          <>
+                            <Text style={{ color: colors.textMuted }}> · </Text>
+                            <Text style={{ fontSize: 14, color: colors.textTertiary }}>
+                              Age {resident.age}
+                            </Text>
+                          </>
+                        )}
+                      </View>
 
-                <ChevronRight size={28} color="#D1D5DB" />
+                      {/* Glucose reading row */}
+                      {glucoseValue && (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            marginTop: 10,
+                            backgroundColor: isHighGlucose
+                              ? colors.dangerLight
+                              : isLowGlucose
+                              ? colors.warningLight
+                              : colors.successLight,
+                            paddingHorizontal: 10,
+                            paddingVertical: 5,
+                            borderRadius: radius.sm,
+                            alignSelf: "flex-start",
+                            gap: 6,
+                          }}
+                        >
+                          <Droplet
+                            size={14}
+                            color={
+                              isHighGlucose
+                                ? colors.danger
+                                : isLowGlucose
+                                ? colors.warningDark
+                                : colors.successDark
+                            }
+                          />
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontWeight: "700",
+                              color: isHighGlucose
+                                ? colors.dangerDark
+                                : isLowGlucose
+                                ? colors.warningDark
+                                : colors.successDark,
+                            }}
+                          >
+                            {glucoseValue} mg/dL
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <ChevronRight size={22} color={colors.divider} style={{ marginLeft: 4 }} />
+                  </View>
+                </Card>
               </TouchableOpacity>
             );
           })
