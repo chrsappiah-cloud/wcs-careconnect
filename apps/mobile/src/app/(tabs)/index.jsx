@@ -1,11 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   RefreshControl,
+  Animated,
+  StyleSheet,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -14,17 +15,60 @@ import {
   ChevronRight,
   Droplet,
   Activity,
+  Users,
+  X,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { colors, radius, shadows, typography } from '../../theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, radius, shadows, typography, gradients, animation } from '../../theme';
 import { mockResidents } from '../../mockData';
 import Avatar from '../../components/Avatar';
 import StatusBadge from '../../components/StatusBadge';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
+import AnimatedPressable from '../../components/AnimatedPressable';
 import { apiUrl } from '../../services/apiClient';
 import { SkeletonList } from '../../components/Skeleton';
+import { haptic } from '../../utils/haptics';
+
+function AnimatedCard({ children, index, style, onPress }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    const delay = Math.min(index * 60, 400);
+    const timer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 350,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          damping: 18,
+          stiffness: 120,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [fadeAnim, slideAnim, index]);
+
+  return (
+    <Animated.View
+      style={[
+        style,
+        { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+      ]}
+    >
+      <AnimatedPressable onPress={onPress} hapticType="light">
+        {children}
+      </AnimatedPressable>
+    </Animated.View>
+  );
+}
 
 export default function ResidentsScreen() {
   const insets = useSafeAreaInsets();
@@ -59,77 +103,62 @@ export default function ResidentsScreen() {
   }, {});
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: colors.background,
-        paddingTop: insets.top,
-      }}
-    >
-      {/* Header */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Gradient Header */}
+      <LinearGradient
+        colors={gradients.header}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          paddingTop: insets.top + 8,
+          paddingHorizontal: 20,
+          paddingBottom: 20,
+        }}
+      >
         <View
           style={{
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: 4,
+            marginBottom: 14,
           }}
         >
-          <Text style={[typography.largeTitle, { color: colors.text }]}>
+          <Text style={[typography.largeTitle, { color: colors.textInverse }]}>
             Residents
           </Text>
           <View
             style={{
-              backgroundColor: colors.primaryLight,
+              backgroundColor: 'rgba(255,255,255,0.2)',
               paddingHorizontal: 14,
               paddingVertical: 6,
               borderRadius: radius.full,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
             }}
           >
+            <Users size={14} color="rgba(255,255,255,0.9)" />
             <Text
-              style={{ fontSize: 15, fontWeight: '700', color: colors.primary }}
+              style={{ fontSize: 15, fontWeight: '700', color: colors.textInverse }}
             >
-              {residents.length} total
+              {residents.length}
             </Text>
           </View>
         </View>
 
         {/* Status summary pills */}
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: 8,
-            marginBottom: 16,
-            marginTop: 8,
-          }}
-        >
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
           {[
-            {
-              key: 'stable',
-              label: 'Stable',
-              color: colors.success,
-              bg: colors.successLight,
-            },
-            {
-              key: 'warning',
-              label: 'Warning',
-              color: colors.warningDark,
-              bg: colors.warningLight,
-            },
-            {
-              key: 'critical',
-              label: 'Critical',
-              color: colors.danger,
-              bg: colors.dangerLight,
-            },
+            { key: 'stable', label: 'Stable', color: '#4ADE80' },
+            { key: 'warning', label: 'Warning', color: '#FCD34D' },
+            { key: 'critical', label: 'Critical', color: '#FCA5A5' },
           ].map((s) => (
             <View
               key={s.key}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: s.bg,
+                backgroundColor: 'rgba(255,255,255,0.15)',
                 paddingHorizontal: 12,
                 paddingVertical: 6,
                 borderRadius: radius.full,
@@ -144,7 +173,7 @@ export default function ResidentsScreen() {
                   backgroundColor: s.color,
                 }}
               />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: s.color }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textInverse }}>
                 {statusCounts[s.key] || 0} {s.label}
               </Text>
             </View>
@@ -156,18 +185,15 @@ export default function ResidentsScreen() {
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: colors.surface,
+            backgroundColor: 'rgba(255,255,255,0.95)',
             borderRadius: radius.lg,
-            paddingHorizontal: 16,
-            height: 52,
-            borderWidth: 1.5,
-            borderColor: searchFocused ? colors.primary : colors.surfaceBorder,
-            marginBottom: 8,
-            ...shadows.sm,
+            paddingHorizontal: 14,
+            height: 48,
+            ...shadows.md,
           }}
         >
           <Search
-            size={20}
+            size={18}
             color={searchFocused ? colors.primary : colors.textMuted}
           />
           <TextInput
@@ -179,32 +205,35 @@ export default function ResidentsScreen() {
             onBlur={() => setSearchFocused(false)}
             style={{
               flex: 1,
-              marginLeft: 12,
-              fontSize: 17,
+              marginLeft: 10,
+              fontSize: 16,
               color: colors.text,
             }}
           />
           {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch('')}>
-              <Text
+            <AnimatedPressable onPress={() => { setSearch(''); haptic.selection(); }} hapticType={null}>
+              <View
                 style={{
-                  fontSize: 14,
-                  color: colors.primary,
-                  fontWeight: '600',
+                  width: 24,
+                  height: 24,
+                  borderRadius: 12,
+                  backgroundColor: colors.surfaceSecondary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
-                Clear
-              </Text>
-            </TouchableOpacity>
+                <X size={14} color={colors.textTertiary} />
+              </View>
+            </AnimatedPressable>
           )}
         </View>
-      </View>
+      </LinearGradient>
 
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 20,
-          paddingTop: 8,
+          paddingTop: 16,
           paddingBottom: 40,
         }}
         showsVerticalScrollIndicator={false}
@@ -227,19 +256,19 @@ export default function ResidentsScreen() {
             }
           />
         ) : (
-          filteredResidents.map((resident) => {
+          filteredResidents.map((resident, idx) => {
             const glucoseValue = resident.latest_glucose?.value;
             const isHighGlucose = glucoseValue && glucoseValue > 180;
             const isLowGlucose = glucoseValue && glucoseValue < 70;
 
             return (
-              <TouchableOpacity
+              <AnimatedCard
                 key={resident.id}
-                activeOpacity={0.7}
+                index={idx}
+                style={{ marginBottom: 12 }}
                 onPress={() =>
                   router.navigate(`/(tabs)/resident/${resident.id}`)
                 }
-                style={{ marginBottom: 12 }}
               >
                 <Card variant="elevated" style={{ padding: 16 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -248,16 +277,16 @@ export default function ResidentsScreen() {
                       <Avatar
                         name={resident.name}
                         uri={resident.photo_url}
-                        size={60}
+                        size={56}
                       />
                       <View
                         style={{
                           position: 'absolute',
                           bottom: 0,
                           right: 0,
-                          width: 18,
-                          height: 18,
-                          borderRadius: 9,
+                          width: 16,
+                          height: 16,
+                          borderRadius: 8,
                           backgroundColor:
                             colors.status[resident.status]?.color ||
                             colors.success,
@@ -278,10 +307,11 @@ export default function ResidentsScreen() {
                       >
                         <Text
                           style={{
-                            fontSize: 18,
-                            fontWeight: '700',
+                            fontSize: 17,
+                            fontWeight: '600',
                             color: colors.text,
                             flex: 1,
+                            letterSpacing: -0.4,
                           }}
                           numberOfLines={1}
                         >
@@ -298,7 +328,7 @@ export default function ResidentsScreen() {
                           gap: 4,
                         }}
                       >
-                        <MapPin size={14} color={colors.textTertiary} />
+                        <MapPin size={13} color={colors.textTertiary} />
                         <Text
                           style={{ fontSize: 14, color: colors.textTertiary }}
                         >
@@ -333,13 +363,13 @@ export default function ResidentsScreen() {
                                 : colors.successLight,
                             paddingHorizontal: 10,
                             paddingVertical: 5,
-                            borderRadius: radius.sm,
+                            borderRadius: radius.full,
                             alignSelf: 'flex-start',
                             gap: 6,
                           }}
                         >
                           <Droplet
-                            size={14}
+                            size={13}
                             color={
                               isHighGlucose
                                 ? colors.danger
@@ -365,14 +395,22 @@ export default function ResidentsScreen() {
                       )}
                     </View>
 
-                    <ChevronRight
-                      size={22}
-                      color={colors.divider}
-                      style={{ marginLeft: 4 }}
-                    />
+                    <View
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: colors.surfaceSecondary,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginLeft: 8,
+                      }}
+                    >
+                      <ChevronRight size={16} color={colors.textMuted} />
+                    </View>
                   </View>
                 </Card>
-              </TouchableOpacity>
+              </AnimatedCard>
             );
           })
         )}

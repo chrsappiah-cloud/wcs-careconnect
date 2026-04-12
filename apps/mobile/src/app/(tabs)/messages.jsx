@@ -3,18 +3,21 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   TextInput,
+  Animated,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Send, MessageCircle } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import KeyboardAvoidingAnimatedView from '@/components/KeyboardAvoidingAnimatedView';
-import { colors, radius, shadows, typography } from '../../theme';
+import { colors, radius, shadows, typography, gradients, animation } from '../../theme';
 import { mockMessages } from '../../mockData';
 import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
+import AnimatedPressable from '../../components/AnimatedPressable';
+import { haptic } from '../../utils/haptics';
 import { apiUrl } from '../../services/apiClient';
 
 const ROLE_COLORS = {
@@ -64,6 +67,7 @@ export default function MessagesScreen() {
 
   const handleSend = () => {
     if (content.trim()) {
+      haptic.medium();
       sendMessageMutation.mutate({ content: content.trim() });
     }
   };
@@ -81,24 +85,26 @@ export default function MessagesScreen() {
       style={{ flex: 1, backgroundColor: colors.background }}
       behavior="padding"
     >
-      <View style={{ flex: 1, paddingTop: insets.top }}>
-        {/* Header */}
-        <View
+      <View style={{ flex: 1 }}>
+        {/* Gradient Header */}
+        <LinearGradient
+          colors={gradients.header}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={{
+            paddingTop: insets.top + 8,
             paddingHorizontal: 20,
-            paddingVertical: 14,
-            backgroundColor: colors.surface,
-            ...shadows.sm,
+            paddingBottom: 16,
           }}
         >
-          <Text style={[typography.title2, { color: colors.text }]}>
+          <Text style={[typography.title2, { color: colors.textInverse }]}>
             Care Team
           </Text>
           <View
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              marginTop: 4,
+              marginTop: 8,
               gap: 12,
             }}
           >
@@ -117,15 +123,17 @@ export default function MessagesScreen() {
                     height: 8,
                     borderRadius: 4,
                     backgroundColor: config.text,
+                    borderWidth: 1.5,
+                    borderColor: 'rgba(255,255,255,0.3)',
                   }}
                 />
-                <Text style={{ fontSize: 12, color: colors.textTertiary }}>
+                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>
                   {role}
                 </Text>
               </View>
             ))}
           </View>
-        </View>
+        </LinearGradient>
 
         <ScrollView
           ref={scrollRef}
@@ -222,29 +230,53 @@ export default function MessagesScreen() {
                     )}
 
                     {/* Message bubble */}
-                    <View
-                      style={{
-                        backgroundColor: own ? colors.primary : colors.surface,
-                        borderRadius: 18,
-                        borderTopLeftRadius: own ? 18 : 6,
-                        borderTopRightRadius: own ? 6 : 18,
-                        paddingHorizontal: 14,
-                        paddingVertical: 10,
-                        borderWidth: own ? 0 : 1,
-                        borderColor: colors.surfaceBorder,
-                        ...shadows.sm,
-                      }}
-                    >
-                      <Text
+                    {own ? (
+                      <LinearGradient
+                        colors={gradients.primary}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
                         style={{
-                          fontSize: 15,
-                          color: own ? colors.textInverse : colors.text,
-                          lineHeight: 22,
+                          borderRadius: 18,
+                          borderTopRightRadius: 6,
+                          paddingHorizontal: 14,
+                          paddingVertical: 10,
+                          ...shadows.colored(colors.primary),
                         }}
                       >
-                        {msg.content}
-                      </Text>
-                    </View>
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            color: colors.textInverse,
+                            lineHeight: 22,
+                          }}
+                        >
+                          {msg.content}
+                        </Text>
+                      </LinearGradient>
+                    ) : (
+                      <View
+                        style={{
+                          backgroundColor: colors.surface,
+                          borderRadius: 18,
+                          borderTopLeftRadius: 6,
+                          paddingHorizontal: 14,
+                          paddingVertical: 10,
+                          borderWidth: 1,
+                          borderColor: colors.surfaceBorder,
+                          ...shadows.sm,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            color: colors.text,
+                            lineHeight: 22,
+                          }}
+                        >
+                          {msg.content}
+                        </Text>
+                      </View>
+                    )}
 
                     {/* Timestamp */}
                     <Text
@@ -297,10 +329,10 @@ export default function MessagesScreen() {
               minHeight: 44,
             }}
           />
-          <TouchableOpacity
+          <AnimatedPressable
             onPress={handleSend}
             disabled={!content.trim()}
-            activeOpacity={0.8}
+            hapticType="medium"
             style={{
               width: 44,
               height: 44,
@@ -308,11 +340,11 @@ export default function MessagesScreen() {
               backgroundColor: content.trim() ? colors.primary : colors.divider,
               alignItems: 'center',
               justifyContent: 'center',
-              ...shadows.sm,
+              ...(content.trim() ? shadows.colored(colors.primary) : shadows.sm),
             }}
           >
             <Send size={20} color={colors.textInverse} />
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
       </View>
     </KeyboardAvoidingAnimatedView>

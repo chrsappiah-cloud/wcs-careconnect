@@ -13,13 +13,21 @@ export default function Card({
       style={[
         {
           backgroundColor: colors.surface,
-          borderRadius: radius['2xl'],
+          borderRadius: radius.xl,
+          overflow: 'hidden',
+        },
+        variant === 'default' && {
           borderWidth: 1,
           borderColor: colors.surfaceBorder,
           ...shadows.sm,
         },
-        !noPadding && { padding: 20 },
-        variant === 'elevated' && shadows.md,
+        variant === 'elevated' && {
+          ...shadows.lg,
+        },
+        variant === 'flat' && {
+          backgroundColor: colors.surfaceSecondary,
+        },
+        !noPadding && { padding: 16 },
         style,
       ]}
     >

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   Switch,
   Alert,
   Linking,
@@ -11,6 +10,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -26,10 +26,13 @@ import {
   Stethoscope,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, typography, shadows } from '../../theme';
+import { colors, radius, typography, shadows, gradients } from '../../theme';
 import { useAuth } from '../../utils/auth/useAuth';
 import Avatar from '../../components/Avatar';
 import Card from '../../components/Card';
+import AnimatedPressable from '../../components/AnimatedPressable';
+import GradientHeader from '../../components/GradientHeader';
+import { haptic } from '../../utils/haptics';
 
 const SETTINGS_KEY = '@careconnect_settings';
 const TIMEOUT_OPTIONS = ['5 mins', '10 mins', '15 mins', '20 mins', '30 mins'];
@@ -112,23 +115,10 @@ export default function SettingsScreen() {
       style={{
         flex: 1,
         backgroundColor: colors.background,
-        paddingTop: insets.top,
       }}
     >
-      {/* Header */}
-      <View
-        style={{
-          paddingHorizontal: 20,
-          paddingTop: 16,
-          paddingBottom: 12,
-          backgroundColor: colors.surface,
-          ...shadows.sm,
-        }}
-      >
-        <Text style={[typography.title2, { color: colors.text }]}>
-          Settings
-        </Text>
-      </View>
+      {/* Gradient Header */}
+      <GradientHeader title="Settings" />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -136,8 +126,8 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Card */}
-        <TouchableOpacity
-          activeOpacity={0.7}
+        <AnimatedPressable
+          hapticType="light"
           onPress={() => {
             setEditName(userName);
             setEditRole(userRole);
@@ -173,7 +163,7 @@ export default function SettingsScreen() {
               <ChevronRight size={20} color={colors.textMuted} />
             </View>
           </Card>
-        </TouchableOpacity>
+        </AnimatedPressable>
 
         {/* Settings Groups */}
         <SettingsGroup title="Notifications">
@@ -250,8 +240,8 @@ export default function SettingsScreen() {
         </Text>
 
         {/* Sign Out */}
-        <TouchableOpacity
-          activeOpacity={0.7}
+        <AnimatedPressable
+          hapticType="heavy"
           onPress={handleSignOut}
           style={{
             flexDirection: 'row',
@@ -274,7 +264,7 @@ export default function SettingsScreen() {
           >
             Sign Out
           </Text>
-        </TouchableOpacity>
+        </AnimatedPressable>
       </ScrollView>
 
       {/* Profile Edit Modal */}
@@ -366,8 +356,9 @@ export default function SettingsScreen() {
             />
 
             <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity
+              <AnimatedPressable
                 onPress={() => setShowProfile(false)}
+                hapticType="light"
                 style={{
                   flex: 1,
                   padding: 16,
@@ -385,15 +376,17 @@ export default function SettingsScreen() {
                 >
                   Cancel
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </AnimatedPressable>
+              <AnimatedPressable
                 onPress={handleSaveProfile}
+                hapticType="success"
                 style={{
                   flex: 1,
                   padding: 16,
                   borderRadius: radius.lg,
                   backgroundColor: colors.primary,
                   alignItems: 'center',
+                  ...shadows.colored(colors.primary),
                 }}
               >
                 <Text
@@ -405,7 +398,7 @@ export default function SettingsScreen() {
                 >
                   Save
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressable>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -456,11 +449,16 @@ function SettingsItem({
   onPress,
   last,
 }) {
+  const handlePress = type !== 'switch' ? () => {
+    haptic.light();
+    onPress?.();
+  } : undefined;
+
   return (
-    <TouchableOpacity
-      activeOpacity={0.6}
-      onPress={type !== 'switch' ? onPress : undefined}
+    <AnimatedPressable
+      onPress={handlePress}
       disabled={type === 'switch' && !onPress}
+      hapticType={null}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -497,7 +495,10 @@ function SettingsItem({
       {type === 'switch' ? (
         <Switch
           value={value}
-          onValueChange={onValueChange}
+          onValueChange={(v) => {
+            haptic.selection();
+            onValueChange?.(v);
+          }}
           trackColor={{ true: colors.primary, false: colors.divider }}
           thumbColor="#FFFFFF"
         />
@@ -508,6 +509,6 @@ function SettingsItem({
       ) : (
         <ChevronRight size={18} color={colors.textMuted} />
       )}
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 }

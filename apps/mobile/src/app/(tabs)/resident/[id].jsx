@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   Alert,
   Modal,
   TextInput,
@@ -27,13 +26,16 @@ import {
   FileText,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, typography, shadows } from '../../../theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, radius, typography, shadows, gradients } from '../../../theme';
 import { mockResidents, mockReadings, mockTasks } from '../../../mockData';
 import Avatar from '../../../components/Avatar';
 import StatusBadge from '../../../components/StatusBadge';
 import Card from '../../../components/Card';
 import SectionHeader from '../../../components/SectionHeader';
 import EmptyState from '../../../components/EmptyState';
+import AnimatedPressable from '../../../components/AnimatedPressable';
+import haptic from '../../../utils/haptics';
 import { apiUrl } from '../../../services/apiClient';
 
 const VITAL_CONFIG = {
@@ -242,53 +244,55 @@ export default function ResidentDetailScreen() {
       style={{
         flex: 1,
         backgroundColor: colors.background,
-        paddingTop: insets.top,
       }}
     >
       {/* Header */}
-      <View
+      <LinearGradient
+        colors={gradients.header}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingHorizontal: 16,
           paddingVertical: 10,
-          backgroundColor: colors.surface,
-          ...shadows.sm,
+          paddingTop: insets.top + 10,
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.back()}
+        <AnimatedPressable
+          onPress={() => { haptic.light(); router.back(); }}
+          hapticType="light"
           hitSlop={12}
           style={{
             width: 36,
             height: 36,
             borderRadius: 10,
-            backgroundColor: colors.surfaceSecondary,
+            backgroundColor: 'rgba(255,255,255,0.2)',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <ArrowLeft size={20} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[typography.headline, { color: colors.text }]}>
+          <ArrowLeft size={20} color="#fff" />
+        </AnimatedPressable>
+        <Text style={[typography.headline, { color: '#fff' }]}>
           Resident Detail
         </Text>
-        <TouchableOpacity
-          onPress={simulateBLEReading}
-          activeOpacity={0.7}
+        <AnimatedPressable
+          onPress={() => { haptic.medium(); simulateBLEReading(); }}
+          hapticType="medium"
           style={{
             width: 36,
             height: 36,
             borderRadius: 10,
-            backgroundColor: colors.primaryLight,
+            backgroundColor: 'rgba(255,255,255,0.2)',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Bluetooth size={18} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
+          <Bluetooth size={18} color="#fff" />
+        </AnimatedPressable>
+      </LinearGradient>
 
       <ScrollView
         style={{ flex: 1 }}
@@ -450,9 +454,10 @@ export default function ResidentDetailScreen() {
             title="Pending Tasks"
             subtitle={`${pendingTasks.length} remaining`}
             right={
-              <TouchableOpacity
+              <AnimatedPressable
                 hitSlop={8}
-                onPress={() => setShowAddTask(true)}
+                onPress={() => { haptic.light(); setShowAddTask(true); }}
+                hapticType="light"
                 style={{
                   width: 30,
                   height: 30,
@@ -463,7 +468,7 @@ export default function ResidentDetailScreen() {
                 }}
               >
                 <Plus size={16} color={colors.primary} />
-              </TouchableOpacity>
+              </AnimatedPressable>
             }
             style={{ marginBottom: 12 }}
           />
@@ -476,10 +481,10 @@ export default function ResidentDetailScreen() {
             />
           ) : (
             pendingTasks.map((task) => (
-              <TouchableOpacity
+              <AnimatedPressable
                 key={task.id}
-                activeOpacity={0.7}
                 onPress={() => {
+                  haptic.medium();
                   Alert.alert(
                     'Complete Task',
                     `Mark "${task.title}" as completed?`,
@@ -487,7 +492,7 @@ export default function ResidentDetailScreen() {
                       { text: 'Cancel', style: 'cancel' },
                       {
                         text: 'Complete',
-                        onPress: () => toggleTaskMutation.mutate(task),
+                        onPress: () => { haptic.success(); toggleTaskMutation.mutate(task); },
                       },
                     ],
                   );
@@ -530,7 +535,7 @@ export default function ResidentDetailScreen() {
                     <CheckCircle2 size={22} color={colors.divider} />
                   </View>
                 </Card>
-              </TouchableOpacity>
+              </AnimatedPressable>
             ))
           )}
         </View>
@@ -547,8 +552,7 @@ export default function ResidentDetailScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1, justifyContent: 'flex-end' }}
         >
-          <TouchableOpacity
-            activeOpacity={1}
+          <AnimatedPressable
             onPress={() => setShowAddTask(false)}
             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
           />
@@ -629,12 +633,14 @@ export default function ResidentDetailScreen() {
             />
 
             <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity
+              <AnimatedPressable
                 onPress={() => {
+                  haptic.light();
                   setShowAddTask(false);
                   setNewTaskTitle('');
                   setNewTaskDescription('');
                 }}
+                hapticType="light"
                 style={{
                   flex: 1,
                   padding: 16,
@@ -652,9 +658,10 @@ export default function ResidentDetailScreen() {
                 >
                   Cancel
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleCreateTask}
+              </AnimatedPressable>
+              <AnimatedPressable
+                onPress={() => { haptic.success(); handleCreateTask(); }}
+                hapticType="success"
                 style={{
                   flex: 1,
                   padding: 16,
@@ -662,6 +669,7 @@ export default function ResidentDetailScreen() {
                   backgroundColor: colors.primary,
                   alignItems: 'center',
                   opacity: addTaskMutation.isPending ? 0.6 : 1,
+                  ...shadows.colored?.(colors.primary) || {},
                 }}
                 disabled={addTaskMutation.isPending}
               >
@@ -674,7 +682,7 @@ export default function ResidentDetailScreen() {
                 >
                   {addTaskMutation.isPending ? 'Creating...' : 'Create Task'}
                 </Text>
-              </TouchableOpacity>
+              </AnimatedPressable>
             </View>
           </View>
         </KeyboardAvoidingView>

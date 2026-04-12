@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -19,10 +18,12 @@ import {
   Info,
   Pill,
 } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, shadows, typography } from '../../theme';
+import { colors, radius, shadows, typography, gradients } from '../../theme';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
+import AnimatedPressable from '../../components/AnimatedPressable';
+import GradientHeader from '../../components/GradientHeader';
+import haptic from '../../utils/haptics';
 import {
   checkDrugInteractions,
   COMMON_MEDICATIONS,
@@ -51,7 +52,6 @@ function getSeverityStyle(severity) {
 }
 
 export default function InteractionsScreen() {
-  const insets = useSafeAreaInsets();
   const [selectedMeds, setSelectedMeds] = useState([]);
   const [showPicker, setShowPicker] = useState(false);
 
@@ -90,23 +90,13 @@ export default function InteractionsScreen() {
       style={{
         flex: 1,
         backgroundColor: colors.background,
-        paddingTop: insets.top,
       }}
     >
       {/* Header */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
-        <Text style={[typography.largeTitle, { color: colors.text }]}>
-          Interactions
-        </Text>
-        <Text
-          style={[
-            typography.footnote,
-            { color: colors.textTertiary, marginTop: 2 },
-          ]}
-        >
-          Check drug-drug interactions via OpenFDA labels
-        </Text>
-      </View>
+      <GradientHeader
+        title="Interactions"
+        subtitle="Check drug-drug interactions via OpenFDA labels"
+      />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -159,18 +149,20 @@ export default function InteractionsScreen() {
               >
                 {med.name}
               </Text>
-              <TouchableOpacity
-                onPress={() => removeMed(med.rxcui)}
+              <AnimatedPressable
+                onPress={() => { haptic.light(); removeMed(med.rxcui); }}
+                hapticType="light"
                 style={{ marginLeft: 6, padding: 4 }}
               >
                 <X size={14} color={colors.primary} />
-              </TouchableOpacity>
+              </AnimatedPressable>
             </View>
           ))}
 
           {/* Add button */}
-          <TouchableOpacity
-            onPress={() => setShowPicker(!showPicker)}
+          <AnimatedPressable
+            onPress={() => { haptic.selection(); setShowPicker(!showPicker); }}
+            hapticType="selection"
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -192,17 +184,18 @@ export default function InteractionsScreen() {
             >
               Add Drug
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
 
           {selectedMeds.length > 0 && (
-            <TouchableOpacity
-              onPress={clearAll}
+            <AnimatedPressable
+              onPress={() => { haptic.warning(); clearAll(); }}
+              hapticType="warning"
               style={{ justifyContent: 'center', paddingHorizontal: 8 }}
             >
               <Text style={[typography.caption, { color: colors.danger }]}>
                 Clear all
               </Text>
-            </TouchableOpacity>
+            </AnimatedPressable>
           )}
         </View>
 
@@ -221,12 +214,13 @@ export default function InteractionsScreen() {
               {COMMON_MEDICATIONS.filter(
                 (m) => !selectedMeds.find((s) => s.rxcui === m.rxcui),
               ).map((med) => (
-                <TouchableOpacity
+                <AnimatedPressable
                   key={med.rxcui}
-                  onPress={() => addMed(med)}
+                  onPress={() => { haptic.selection(); addMed(med); }}
+                  hapticType="selection"
                   style={{
                     backgroundColor: colors.surfaceSecondary,
-                    borderRadius: radius.md,
+                    borderRadius: radius.full,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
                   }}
@@ -234,7 +228,7 @@ export default function InteractionsScreen() {
                   <Text style={[typography.footnote, { color: colors.text }]}>
                     {med.name}
                   </Text>
-                </TouchableOpacity>
+                </AnimatedPressable>
               ))}
             </View>
           </Card>

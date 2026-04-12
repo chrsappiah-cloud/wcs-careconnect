@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
+  Animated,
   RefreshControl,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   CheckCircle2,
@@ -14,23 +15,58 @@ import {
   ClipboardList,
   AlertCircle,
 } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatDistanceToNow } from 'date-fns';
-import { colors, radius, shadows, typography } from '../../theme';
+import { colors, radius, shadows, typography, gradients, animation } from '../../theme';
 import { mockTasks } from '../../mockData';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
+import AnimatedPressable from '../../components/AnimatedPressable';
+import GradientHeader from '../../components/GradientHeader';
+import { haptic } from '../../utils/haptics';
 import { SkeletonList } from '../../components/Skeleton';
 import { apiUrl } from '../../services/apiClient';
 
 const PRIORITY_CONFIG = {
-  high: { color: colors.danger, bg: colors.dangerLight, label: 'High' },
-  medium: { color: colors.warning, bg: colors.warningLight, label: 'Med' },
-  low: { color: colors.primary, bg: colors.primaryLight, label: 'Low' },
+  high: { color: colors.danger, bg: colors.dangerLight, label: 'High', gradient: ['#EF4444', '#F87171'] },
+  medium: { color: colors.warning, bg: colors.warningLight, label: 'Med', gradient: ['#F59E0B', '#FBBF24'] },
+  low: { color: colors.primary, bg: colors.primaryLight, label: 'Low', gradient: ['#2563EB', '#60A5FA'] },
 };
 
+function AnimatedTaskCard({ children, index, style }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    const delay = index * 60;
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: animation.duration.normal,
+        delay,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        delay,
+        useNativeDriver: true,
+        ...animation.spring,
+      }),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        style,
+        { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
 export default function TasksScreen() {
-  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
 
   const {
@@ -70,82 +106,56 @@ export default function TasksScreen() {
 
   const pendingTasks = tasks.filter((t) => t.status === 'pending');
   const completedTasks = tasks.filter((t) => t.status === 'completed');
+  const pct = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0;
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: colors.background,
-        paddingTop: insets.top,
-      }}
-    >
-      {/* Header */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
-        <Text style={[typography.largeTitle, { color: colors.text }]}>
-          Tasks
-        </Text>
-
-        {/* Progress bar */}
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Gradient Header with progress */}
+      <GradientHeader
+        title="Tasks"
+        subtitle={tasks.length > 0 ? `${completedTasks.length} of ${tasks.length} completed` : undefined}
+      >
         {tasks.length > 0 && (
-          <View style={{ marginTop: 12, marginBottom: 8 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                marginBottom: 6,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: colors.textTertiary,
-                  fontWeight: '500',
-                }}
-              >
-                {completedTasks.length} of {tasks.length} completed
-              </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: colors.primary,
-                  fontWeight: '700',
-                }}
-              >
-                {tasks.length > 0
-                  ? Math.round((completedTasks.length / tasks.length) * 100)
-                  : 0}
-                %
-              </Text>
-            </View>
+          <View style={{ marginTop: 14 }}>
             <View
               style={{
                 height: 6,
-                backgroundColor: colors.surfaceSecondary,
+                backgroundColor: 'rgba(255,255,255,0.2)',
                 borderRadius: 3,
                 overflow: 'hidden',
               }}
             >
-              <View
+              <LinearGradient
+                colors={['#60A5FA', '#FFFFFF']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
                 style={{
                   height: 6,
-                  width:
-                    tasks.length > 0
-                      ? `${(completedTasks.length / tasks.length) * 100}%`
-                      : '0%',
-                  backgroundColor: colors.primary,
+                  width: `${pct}%`,
                   borderRadius: 3,
                 }}
               />
             </View>
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: '700',
+                color: 'rgba(255,255,255,0.9)',
+                textAlign: 'right',
+                marginTop: 6,
+              }}
+            >
+              {pct}%
+            </Text>
           </View>
         )}
-      </View>
+      </GradientHeader>
 
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 20,
-          paddingTop: 8,
+          paddingTop: 16,
           paddingBottom: 40,
         }}
         showsVerticalScrollIndicator={false}
@@ -180,9 +190,9 @@ export default function TasksScreen() {
                 >
                   <View
                     style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 12,
+                      width: 26,
+                      height: 26,
+                      borderRadius: 13,
                       backgroundColor: colors.primaryLight,
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -207,12 +217,13 @@ export default function TasksScreen() {
                     Pending
                   </Text>
                 </View>
-                {pendingTasks.map((task) => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    onToggle={() => toggleTaskMutation.mutate(task)}
-                  />
+                {pendingTasks.map((task, idx) => (
+                  <AnimatedTaskCard key={task.id} index={idx}>
+                    <TaskItem
+                      task={task}
+                      onToggle={() => toggleTaskMutation.mutate(task)}
+                    />
+                  </AnimatedTaskCard>
                 ))}
               </View>
             )}
@@ -230,9 +241,9 @@ export default function TasksScreen() {
                 >
                   <View
                     style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 12,
+                      width: 26,
+                      height: 26,
+                      borderRadius: 13,
                       backgroundColor: colors.successLight,
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -246,12 +257,13 @@ export default function TasksScreen() {
                     Completed
                   </Text>
                 </View>
-                {completedTasks.map((task) => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    onToggle={() => toggleTaskMutation.mutate(task)}
-                  />
+                {completedTasks.map((task, idx) => (
+                  <AnimatedTaskCard key={task.id} index={idx}>
+                    <TaskItem
+                      task={task}
+                      onToggle={() => toggleTaskMutation.mutate(task)}
+                    />
+                  </AnimatedTaskCard>
                 ))}
               </View>
             )}
@@ -266,20 +278,46 @@ function TaskItem({ task, onToggle }) {
   const isCompleted = task.status === 'completed';
   const priority = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
 
+  const handleToggle = () => {
+    if (isCompleted) {
+      haptic.light();
+    } else {
+      haptic.success();
+    }
+    onToggle();
+  };
+
   return (
-    <TouchableOpacity
-      onPress={onToggle}
-      activeOpacity={0.7}
+    <AnimatedPressable
+      onPress={handleToggle}
+      hapticType={isCompleted ? 'light' : 'medium'}
       style={{ marginBottom: 10 }}
     >
       <Card
+        variant="elevated"
         style={{
           padding: 16,
           opacity: isCompleted ? 0.55 : 1,
-          borderLeftWidth: isCompleted ? 0 : 3,
-          borderLeftColor: isCompleted ? 'transparent' : priority.color,
+          overflow: 'hidden',
         }}
       >
+        {/* Priority accent bar */}
+        {!isCompleted && (
+          <LinearGradient
+            colors={priority.gradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 4,
+              borderTopLeftRadius: radius.xl,
+              borderBottomLeftRadius: radius.xl,
+            }}
+          />
+        )}
         <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
           {/* Check icon */}
           <View style={{ marginRight: 14, marginTop: 2 }}>
@@ -299,6 +337,7 @@ function TaskItem({ task, onToggle }) {
                 color: isCompleted ? colors.textMuted : colors.text,
                 textDecorationLine: isCompleted ? 'line-through' : 'none',
                 lineHeight: 22,
+                letterSpacing: -0.32,
               }}
             >
               {task.title}
@@ -332,9 +371,9 @@ function TaskItem({ task, onToggle }) {
                     flexDirection: 'row',
                     alignItems: 'center',
                     backgroundColor: priority.bg,
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderRadius: radius.sm,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: radius.full,
                     gap: 4,
                   }}
                 >
@@ -343,9 +382,10 @@ function TaskItem({ task, onToggle }) {
                   )}
                   <Text
                     style={{
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: '700',
                       color: priority.color,
+                      letterSpacing: 0.07,
                     }}
                   >
                     {priority.label}
@@ -369,6 +409,6 @@ function TaskItem({ task, onToggle }) {
           </View>
         </View>
       </Card>
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 }

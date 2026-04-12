@@ -113,3 +113,32 @@ jest.mock('@gorhom/bottom-sheet', () => {
     BottomSheetScrollView: ({ children }) => <View>{children}</View>,
   };
 });
+
+// Mock expo-haptics
+jest.mock('expo-haptics', () => ({
+  impactAsync: jest.fn().mockResolvedValue(undefined),
+  notificationAsync: jest.fn().mockResolvedValue(undefined),
+  selectionAsync: jest.fn().mockResolvedValue(undefined),
+  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
+  NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
+}));
+
+// Mock expo-linear-gradient
+jest.mock('expo-linear-gradient', () => {
+  const { View } = require('react-native');
+  return {
+    LinearGradient: ({ children, ...props }) => (
+      <View testID="linear-gradient" {...props}>{children}</View>
+    ),
+  };
+});
+
+// Mock expo-blur
+jest.mock('expo-blur', () => {
+  const { View } = require('react-native');
+  return {
+    BlurView: ({ children, ...props }) => (
+      <View testID="blur-view" {...props}>{children}</View>
+    ),
+  };
+});

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   ActivityIndicator,
 } from 'react-native';
@@ -16,10 +15,12 @@ import {
   Info,
   X,
 } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, shadows, typography } from '../../theme';
+import { colors, radius, shadows, typography, gradients } from '../../theme';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
+import AnimatedPressable from '../../components/AnimatedPressable';
+import GradientHeader from '../../components/GradientHeader';
+import { haptic } from '../../utils/haptics';
 import {
   searchDrugs,
   topAdverseReactions,
@@ -30,7 +31,6 @@ import {
 } from '../../services/auMedApi';
 
 export default function MedicationsScreen() {
-  const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [selectedDrug, setSelectedDrug] = useState(null);
 
@@ -86,23 +86,13 @@ export default function MedicationsScreen() {
       style={{
         flex: 1,
         backgroundColor: colors.background,
-        paddingTop: insets.top,
       }}
     >
-      {/* Header */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
-        <Text style={[typography.largeTitle, { color: colors.text }]}>
-          Medications
-        </Text>
-        <Text
-          style={[
-            typography.footnote,
-            { color: colors.textTertiary, marginTop: 2 },
-          ]}
-        >
-          Australian drug data via RxNorm & OpenFDA
-        </Text>
-      </View>
+      {/* Gradient Header */}
+      <GradientHeader
+        title="Medications"
+        subtitle="Australian drug data via RxNorm & OpenFDA"
+      />
 
       {/* Search bar */}
       <View style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
@@ -141,14 +131,15 @@ export default function MedicationsScreen() {
             <ActivityIndicator size="small" color={colors.primary} />
           )}
           {search.length > 0 && (
-            <TouchableOpacity
+            <AnimatedPressable
               onPress={() => {
                 setSearch('');
                 setSelectedDrug(null);
               }}
+              hapticType="light"
             >
               <X size={18} color={colors.textMuted} />
-            </TouchableOpacity>
+            </AnimatedPressable>
           )}
         </View>
       </View>
@@ -191,9 +182,9 @@ export default function MedicationsScreen() {
                   </View>
                 )}
               </View>
-              <TouchableOpacity onPress={clearSelection}>
+              <AnimatedPressable onPress={clearSelection} hapticType="light">
                 <X size={20} color={colors.textMuted} />
-              </TouchableOpacity>
+              </AnimatedPressable>
             </View>
 
             {/* Drug info from RxNorm */}
@@ -427,10 +418,13 @@ export default function MedicationsScreen() {
               SEARCH RESULTS — {displayDrugs.length} found
             </Text>
             {displayDrugs.slice(0, 20).map((drug, i) => (
-              <TouchableOpacity
+              <AnimatedPressable
                 key={`${drug.rxcui}-${i}`}
-                onPress={() => setSelectedDrug(drug)}
-                activeOpacity={0.7}
+                onPress={() => {
+                  haptic.selection();
+                  setSelectedDrug(drug);
+                }}
+                hapticType={null}
               >
                 <Card style={{ marginBottom: 8 }}>
                   <View
@@ -472,7 +466,7 @@ export default function MedicationsScreen() {
                     <ChevronRight size={18} color={colors.textMuted} />
                   </View>
                 </Card>
-              </TouchableOpacity>
+              </AnimatedPressable>
             ))}
           </View>
         )}
@@ -502,14 +496,15 @@ export default function MedicationsScreen() {
                   }}
                 >
                   {suggestions.map((s, i) => (
-                    <TouchableOpacity
+                    <AnimatedPressable
                       key={i}
                       onPress={() => setSearch(s)}
+                      hapticType="light"
                       style={{
                         backgroundColor: colors.primaryLight,
                         paddingHorizontal: 14,
                         paddingVertical: 8,
-                        borderRadius: radius.lg,
+                        borderRadius: radius.full,
                       }}
                     >
                       <Text
@@ -520,7 +515,7 @@ export default function MedicationsScreen() {
                       >
                         {s}
                       </Text>
-                    </TouchableOpacity>
+                    </AnimatedPressable>
                   ))}
                 </View>
               )}
@@ -546,9 +541,10 @@ export default function MedicationsScreen() {
               }}
             >
               {COMMON_MEDICATIONS.map((med) => (
-                <TouchableOpacity
+                <AnimatedPressable
                   key={med.rxcui}
                   onPress={() => {
+                    haptic.selection();
                     setSearch(med.name.split(' ')[0]);
                     setSelectedDrug({
                       rxcui: med.rxcui,
@@ -556,12 +552,12 @@ export default function MedicationsScreen() {
                       tty: 'IN',
                     });
                   }}
-                  activeOpacity={0.7}
+                  hapticType={null}
                   style={{
                     backgroundColor: colors.surface,
                     borderWidth: 1,
                     borderColor: colors.surfaceBorder,
-                    borderRadius: radius.lg,
+                    borderRadius: radius.full,
                     paddingHorizontal: 14,
                     paddingVertical: 10,
                     ...shadows.sm,
@@ -570,7 +566,7 @@ export default function MedicationsScreen() {
                   <Text style={[typography.footnote, { color: colors.text }]}>
                     {med.name}
                   </Text>
-                </TouchableOpacity>
+                </AnimatedPressable>
               ))}
             </View>
 

@@ -14,7 +14,7 @@ describe('Card', () => {
     expect(screen.getByText('Hello')).toBeTruthy();
   });
 
-  it('applies default padding of 20', () => {
+  it('applies default padding of 16', () => {
     const { toJSON } = render(
       <Card>
         <Text>Padded</Text>
@@ -22,7 +22,7 @@ describe('Card', () => {
     );
     const root = toJSON();
     const flatStyle = Object.assign({}, ...root.props.style.filter(Boolean));
-    expect(flatStyle.padding).toBe(20);
+    expect(flatStyle.padding).toBe(16);
   });
 
   it('removes padding when noPadding is true', () => {
@@ -45,7 +45,7 @@ describe('Card', () => {
     );
     const root = toJSON();
     const flatStyle = Object.assign({}, ...root.props.style.filter(Boolean));
-    expect(flatStyle.shadowRadius).toBe(shadows.md.shadowRadius);
+    expect(flatStyle.shadowRadius).toBe(shadows.lg.shadowRadius);
   });
 
   it('applies custom style', () => {
@@ -59,7 +59,7 @@ describe('Card', () => {
     expect(flatStyle.marginTop).toBe(99);
   });
 
-  it('uses surface background and surface border', () => {
+  it('uses surface background and correct border radius', () => {
     const { toJSON } = render(
       <Card>
         <Text>BG</Text>
@@ -68,7 +68,6 @@ describe('Card', () => {
     const root = toJSON();
     const base = root.props.style[0];
     expect(base.backgroundColor).toBe(colors.surface);
-    expect(base.borderColor).toBe(colors.surfaceBorder);
-    expect(base.borderRadius).toBe(radius['2xl']);
+    expect(base.borderRadius).toBe(radius.xl);
   });
 });

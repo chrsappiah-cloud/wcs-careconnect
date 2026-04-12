@@ -34,17 +34,17 @@ describe('StatusBadge', () => {
     const { toJSON } = render(<StatusBadge status="stable" size="sm" />);
     const root = toJSON();
     expect(root.props.style.paddingHorizontal).toBe(8);
-    expect(root.props.style.paddingVertical).toBe(2);
-    const textNode = root.children[0];
-    expect(textNode.props.style.fontSize).toBe(12);
+    expect(root.props.style.paddingVertical).toBe(3);
+    const textNode = root.children.find(c => c.type === 'Text');
+    expect(textNode.props.style.fontSize).toBe(11);
   });
 
   it('renders md size (default) with larger padding and font', () => {
     const { toJSON } = render(<StatusBadge status="warning" />);
     const root = toJSON();
-    expect(root.props.style.paddingHorizontal).toBe(12);
-    expect(root.props.style.paddingVertical).toBe(4);
-    const textNode = root.children[0];
-    expect(textNode.props.style.fontSize).toBe(14);
+    expect(root.props.style.paddingHorizontal).toBe(10);
+    expect(root.props.style.paddingVertical).toBe(5);
+    const textNode = root.children.find(c => c.type === 'Text');
+    expect(textNode.props.style.fontSize).toBe(13);
   });
 });

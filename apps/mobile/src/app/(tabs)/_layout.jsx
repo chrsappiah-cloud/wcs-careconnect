@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { BlurView } from 'expo-blur';
 import {
   Users,
   Bell,
@@ -34,27 +35,49 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
+          position: 'absolute',
           height: Platform.OS === 'ios' ? 88 : 64,
           paddingBottom: Platform.OS === 'ios' ? 28 : 8,
           paddingTop: 8,
-          backgroundColor: colors.surface,
+          backgroundColor: Platform.OS === 'ios' ? 'transparent' : colors.surface,
           borderTopWidth: 0,
-          ...Platform.select({
-            ios: {
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: -4 },
-              shadowOpacity: 0.06,
-              shadowRadius: 12,
-            },
-            android: { elevation: 8 },
-          }),
+          elevation: 0,
         },
+        tabBarBackground: () =>
+          Platform.OS === 'ios' ? (
+            <BlurView
+              tint="systemChromeMaterial"
+              intensity={100}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+              }}
+            />
+          ) : (
+            <View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: colors.surface,
+                ...Platform.select({
+                  android: { elevation: 8 },
+                }),
+              }}
+            />
+          ),
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '600',
           marginTop: 2,
+          letterSpacing: 0.1,
         },
         tabBarIconStyle: {
           marginBottom: -2,

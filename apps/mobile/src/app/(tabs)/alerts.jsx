@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   RefreshControl,
+  Animated,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -17,13 +17,16 @@ import {
   Zap,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { format, formatDistanceToNow } from 'date-fns';
-import { colors, radius, shadows, typography } from '../../theme';
+import { colors, radius, shadows, typography, gradients } from '../../theme';
 import { mockAlerts } from '../../mockData';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
+import AnimatedPressable from '../../components/AnimatedPressable';
 import { SkeletonList } from '../../components/Skeleton';
 import { apiUrl } from '../../services/apiClient';
+import { haptic } from '../../utils/haptics';
 
 const SEVERITY_CONFIG = {
   critical: {
@@ -32,6 +35,7 @@ const SEVERITY_CONFIG = {
     darkText: colors.dangerDark,
     icon: ShieldAlert,
     label: 'CRITICAL',
+    gradient: ['#DC2626', '#EF4444'],
   },
   warning: {
     color: colors.warning,
@@ -39,6 +43,7 @@ const SEVERITY_CONFIG = {
     darkText: colors.warningDark,
     icon: AlertTriangle,
     label: 'WARNING',
+    gradient: ['#D97706', '#F59E0B'],
   },
   info: {
     color: colors.severity.info,
@@ -46,8 +51,46 @@ const SEVERITY_CONFIG = {
     darkText: '#1E40AF',
     icon: Info,
     label: 'INFO',
+    gradient: ['#2563EB', '#3B82F6'],
   },
 };
+
+function AnimatedAlertCard({ children, index }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    const delay = Math.min(index * 80, 400);
+    const timer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 350,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          damping: 18,
+          stiffness: 120,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [fadeAnim, slideAnim, index]);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }],
+        marginBottom: 14,
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+}
 
 export default function AlertsScreen() {
   const insets = useSafeAreaInsets();
@@ -85,6 +128,7 @@ export default function AlertsScreen() {
       return response.json();
     },
     onSuccess: () => {
+      haptic.success();
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
       queryClient.invalidateQueries({ queryKey: ['residents'] });
     },
@@ -94,15 +138,18 @@ export default function AlertsScreen() {
   const warningCount = alerts.filter((a) => a.severity === 'warning').length;
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: colors.background,
-        paddingTop: insets.top,
-      }}
-    >
-      {/* Header */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Gradient Header */}
+      <LinearGradient
+        colors={criticalCount > 0 ? ['#991B1B', '#DC2626'] : gradients.header}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          paddingTop: insets.top + 8,
+          paddingHorizontal: 20,
+          paddingBottom: 20,
+        }}
+      >
         <View
           style={{
             flexDirection: 'row',
@@ -110,7 +157,7 @@ export default function AlertsScreen() {
             justifyContent: 'space-between',
           }}
         >
-          <Text style={[typography.largeTitle, { color: colors.text }]}>
+          <Text style={[typography.largeTitle, { color: colors.textInverse }]}>
             Alerts
           </Text>
           {alerts.length > 0 && (
@@ -120,20 +167,16 @@ export default function AlertsScreen() {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    backgroundColor: colors.dangerLight,
+                    backgroundColor: 'rgba(255,255,255,0.2)',
                     paddingHorizontal: 10,
                     paddingVertical: 5,
                     borderRadius: radius.full,
-                    gap: 4,
+                    gap: 5,
                   }}
                 >
-                  <Zap size={14} color={colors.danger} />
+                  <Zap size={13} color="#FCA5A5" />
                   <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '700',
-                      color: colors.danger,
-                    }}
+                    style={{ fontSize: 13, fontWeight: '700', color: colors.textInverse }}
                   >
                     {criticalCount}
                   </Text>
@@ -144,20 +187,16 @@ export default function AlertsScreen() {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    backgroundColor: colors.warningLight,
+                    backgroundColor: 'rgba(255,255,255,0.2)',
                     paddingHorizontal: 10,
                     paddingVertical: 5,
                     borderRadius: radius.full,
-                    gap: 4,
+                    gap: 5,
                   }}
                 >
-                  <AlertTriangle size={14} color={colors.warning} />
+                  <AlertTriangle size={13} color="#FCD34D" />
                   <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '700',
-                      color: colors.warningDark,
-                    }}
+                    style={{ fontSize: 13, fontWeight: '700', color: colors.textInverse }}
                   >
                     {warningCount}
                   </Text>
@@ -169,20 +208,20 @@ export default function AlertsScreen() {
         <Text
           style={[
             typography.callout,
-            { color: colors.textTertiary, marginTop: 4, marginBottom: 8 },
+            { color: 'rgba(255,255,255,0.8)', marginTop: 4 },
           ]}
         >
           {alerts.length > 0
             ? `${alerts.length} active alert${alerts.length !== 1 ? 's' : ''} requiring attention`
             : 'No active alerts'}
         </Text>
-      </View>
+      </LinearGradient>
 
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 20,
-          paddingTop: 8,
+          paddingTop: 16,
           paddingBottom: 40,
         }}
         showsVerticalScrollIndicator={false}
@@ -208,24 +247,26 @@ export default function AlertsScreen() {
               const order = { critical: 0, warning: 1, info: 2 };
               return (order[a.severity] ?? 3) - (order[b.severity] ?? 3);
             })
-            .map((alert) => {
+            .map((alert, idx) => {
               const sev =
                 SEVERITY_CONFIG[alert.severity] || SEVERITY_CONFIG.info;
               const SevIcon = sev.icon;
 
               return (
-                <View key={alert.id} style={{ marginBottom: 12 }}>
+                <AnimatedAlertCard key={alert.id} index={idx}>
                   <Card variant="elevated" noPadding>
-                    {/* Severity accent bar */}
-                    <View
+                    {/* Severity accent bar with gradient */}
+                    <LinearGradient
+                      colors={sev.gradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
                       style={{
                         height: 4,
-                        backgroundColor: sev.color,
-                        borderTopLeftRadius: radius['2xl'],
-                        borderTopRightRadius: radius['2xl'],
+                        borderTopLeftRadius: radius.xl,
+                        borderTopRightRadius: radius.xl,
                       }}
                     />
-                    <View style={{ padding: 18 }}>
+                    <View style={{ padding: 16 }}>
                       {/* Top row: severity badge + time */}
                       <View
                         style={{
@@ -242,14 +283,14 @@ export default function AlertsScreen() {
                             backgroundColor: sev.bg,
                             paddingHorizontal: 10,
                             paddingVertical: 4,
-                            borderRadius: radius.sm,
-                            gap: 6,
+                            borderRadius: radius.full,
+                            gap: 5,
                           }}
                         >
-                          <SevIcon size={14} color={sev.color} />
+                          <SevIcon size={13} color={sev.color} />
                           <Text
                             style={{
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: '800',
                               color: sev.darkText,
                               letterSpacing: 0.8,
@@ -265,9 +306,9 @@ export default function AlertsScreen() {
                             gap: 4,
                           }}
                         >
-                          <Clock size={13} color={colors.textMuted} />
+                          <Clock size={12} color={colors.textMuted} />
                           <Text
-                            style={{ fontSize: 13, color: colors.textMuted }}
+                            style={{ fontSize: 12, color: colors.textMuted }}
                           >
                             {formatDistanceToNow(new Date(alert.created_at), {
                               addSuffix: true,
@@ -280,9 +321,10 @@ export default function AlertsScreen() {
                       <Text
                         style={{
                           fontSize: 17,
-                          fontWeight: '700',
+                          fontWeight: '600',
                           color: colors.text,
                           marginBottom: 2,
+                          letterSpacing: -0.4,
                         }}
                       >
                         {alert.resident_name}
@@ -295,42 +337,43 @@ export default function AlertsScreen() {
                           color: colors.textSecondary,
                           lineHeight: 22,
                           marginTop: 6,
-                          marginBottom: 14,
+                          marginBottom: 16,
                         }}
                       >
                         {alert.message}
                       </Text>
 
                       {/* Action button */}
-                      <TouchableOpacity
+                      <AnimatedPressable
                         onPress={() => ackMutation.mutate(alert.id)}
                         disabled={ackMutation.isPending}
-                        activeOpacity={0.8}
+                        hapticType="medium"
                         style={{
-                          backgroundColor: colors.text,
+                          backgroundColor: sev.color,
                           borderRadius: radius.md,
                           paddingVertical: 13,
                           alignItems: 'center',
                           flexDirection: 'row',
                           justifyContent: 'center',
                           gap: 8,
-                          opacity: ackMutation.isPending ? 0.6 : 1,
+                          ...shadows.colored(sev.color),
                         }}
                       >
-                        <CheckCircle size={18} color={colors.textInverse} />
+                        <CheckCircle size={17} color={colors.textInverse} />
                         <Text
                           style={{
                             color: colors.textInverse,
                             fontSize: 15,
-                            fontWeight: '700',
+                            fontWeight: '600',
+                            letterSpacing: -0.3,
                           }}
                         >
                           Acknowledge
                         </Text>
-                      </TouchableOpacity>
+                      </AnimatedPressable>
                     </View>
                   </Card>
-                </View>
+                </AnimatedAlertCard>
               );
             })
         )}
