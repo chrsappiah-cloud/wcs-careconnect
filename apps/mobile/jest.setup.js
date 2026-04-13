@@ -143,6 +143,23 @@ jest.mock('expo-blur', () => {
   };
 });
 
+// Mock expo-av
+jest.mock('expo-av', () => {
+  const mockSound = {
+    playAsync: jest.fn().mockResolvedValue(undefined),
+    setPositionAsync: jest.fn().mockResolvedValue(undefined),
+    unloadAsync: jest.fn().mockResolvedValue(undefined),
+  };
+  return {
+    Audio: {
+      setAudioModeAsync: jest.fn().mockResolvedValue(undefined),
+      Sound: {
+        createAsync: jest.fn().mockResolvedValue({ sound: mockSound }),
+      },
+    },
+  };
+});
+
 // Mock expo-notifications
 jest.mock('expo-notifications', () => ({
   getPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
