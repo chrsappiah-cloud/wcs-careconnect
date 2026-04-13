@@ -25,6 +25,26 @@ function broadcast(data, excludeWs) {
   }
 }
 
+// Send to participants of a specific conversation
+async function broadcastToConversation(conversationId, data, excludeWs) {
+  try {
+    const { rows: participants } = await db.query(
+      'SELECT contact_name FROM conversation_participants WHERE conversation_id = $1',
+      [conversationId]
+    );
+    const participantNames = new Set(participants.map(p => p.contact_name));
+    const payload = JSON.stringify(data);
+    for (const [ws, info] of clients) {
+      if (ws !== excludeWs && ws.readyState === WebSocket.OPEN && participantNames.has(info.name)) {
+        ws.send(payload);
+      }
+    }
+  } catch {
+    // Fallback to global broadcast
+    broadcast(data, excludeWs);
+  }
+}
+
 function broadcastPresence() {
   const users = [];
   for (const [, info] of clients) {
@@ -54,11 +74,42 @@ wss.on('connection', (ws) => {
         break;
       }
       case 'typing': {
-        broadcast({ type: 'typing', name: info.name, isTyping: msg.isTyping }, ws);
+        if (msg.conversationId) {
+          broadcastToConversation(msg.conversationId, { type: 'typing', name: info.name, isTyping: msg.isTyping, conversationId: msg.conversationId }, ws);
+        } else {
+          broadcast({ type: 'typing', name: info.name, isTyping: msg.isTyping }, ws);
+        }
         break;
       }
       case 'read_receipt': {
-        broadcast({ type: 'read_receipt', messageId: msg.messageId, reader: info.name }, ws);
+        if (msg.conversationId) {
+          // Mark messages as read in DB
+          db.query(
+            `UPDATE messages SET read_by = array_append(read_by, $1) WHERE id = $2 AND NOT ($1 = ANY(read_by))`,
+            [info.name, msg.messageId]
+          ).catch(() => {});
+          // Reset unread count for this participant
+          db.query(
+            'UPDATE conversation_participants SET unread_count = 0 WHERE conversation_id = $1 AND contact_name = $2',
+            [msg.conversationId, info.name]
+          ).catch(() => {});
+          broadcastToConversation(msg.conversationId, { type: 'read_receipt', messageId: msg.messageId, reader: info.name, conversationId: msg.conversationId }, ws);
+        } else {
+          broadcast({ type: 'read_receipt', messageId: msg.messageId, reader: info.name }, ws);
+        }
+        break;
+      }
+      case 'call_event': {
+        // Live call signaling
+        if (msg.conversationId) {
+          broadcastToConversation(msg.conversationId, {
+            type: 'call_event',
+            action: msg.action, // 'ringing', 'accepted', 'declined', 'ended'
+            caller: info.name,
+            callerRole: info.role,
+            conversationId: msg.conversationId,
+          }, ws);
+        }
         break;
       }
     }
@@ -511,7 +562,180 @@ app.patch('/api/tasks/:id', async (req, res) => {
 });
 
 // ──────────────────────────────────────────────
-// MESSAGES
+// CONTACTS (Stakeholder Directory)
+// ──────────────────────────────────────────────
+app.get('/api/contacts', async (req, res) => {
+  try {
+    let text = 'SELECT * FROM contacts';
+    const params = [];
+    if (req.query.type) {
+      text += ' WHERE stakeholder_type = $1';
+      params.push(req.query.type);
+    }
+    text += ' ORDER BY stakeholder_type, name';
+    const { rows } = await db.query(text, params);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/contacts', async (req, res) => {
+  try {
+    const { name, role, stakeholder_type, organization, phone, email } = req.body;
+    if (!name || !role) return res.status(400).json({ error: 'Name and role are required' });
+    const { rows } = await db.query(
+      `INSERT INTO contacts (name, role, stakeholder_type, organization, phone, email)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [name, role, stakeholder_type || 'external', organization || null, phone || null, email || null]
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ──────────────────────────────────────────────
+// CONVERSATIONS
+// ──────────────────────────────────────────────
+
+/** GET /api/conversations?user=Nurse Sarah — list conversations for a user */
+app.get('/api/conversations', async (req, res) => {
+  try {
+    const userName = req.query.user || 'Nurse Sarah';
+    const { rows } = await db.query(`
+      SELECT c.*,
+        (SELECT json_agg(json_build_object('name', cp2.contact_name, 'role', cp2.contact_role, 'type', cp2.stakeholder_type))
+         FROM conversation_participants cp2 WHERE cp2.conversation_id = c.id) as participants,
+        COALESCE(cp.unread_count, 0) as unread_count
+      FROM conversations c
+      JOIN conversation_participants cp ON cp.conversation_id = c.id AND cp.contact_name = $1
+      ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
+    `, [userName]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** POST /api/conversations — create a new conversation */
+app.post('/api/conversations', async (req, res) => {
+  try {
+    const { title, type, created_by, participants } = req.body;
+    if (!created_by || !participants?.length) {
+      return res.status(400).json({ error: 'created_by and participants are required' });
+    }
+
+    // For direct messages, check if one already exists between these two people
+    if (type === 'direct' && participants.length === 2) {
+      const { rows: existing } = await db.query(`
+        SELECT c.id FROM conversations c
+        WHERE c.type = 'direct'
+        AND (SELECT COUNT(*) FROM conversation_participants cp WHERE cp.conversation_id = c.id) = 2
+        AND EXISTS (SELECT 1 FROM conversation_participants cp WHERE cp.conversation_id = c.id AND cp.contact_name = $1)
+        AND EXISTS (SELECT 1 FROM conversation_participants cp WHERE cp.conversation_id = c.id AND cp.contact_name = $2)
+      `, [participants[0].name, participants[1].name]);
+
+      if (existing.length > 0) {
+        // Return existing conversation with full data
+        const { rows: [conv] } = await db.query(`
+          SELECT c.*,
+            (SELECT json_agg(json_build_object('name', cp2.contact_name, 'role', cp2.contact_role, 'type', cp2.stakeholder_type))
+             FROM conversation_participants cp2 WHERE cp2.conversation_id = c.id) as participants
+          FROM conversations c WHERE c.id = $1
+        `, [existing[0].id]);
+        return res.json(conv);
+      }
+    }
+
+    const { rows: [conv] } = await db.query(
+      `INSERT INTO conversations (title, type, created_by) VALUES ($1, $2, $3) RETURNING *`,
+      [title || null, type || 'direct', created_by]
+    );
+
+    for (const p of participants) {
+      await db.query(
+        'INSERT INTO conversation_participants (conversation_id, contact_name, contact_role, stakeholder_type) VALUES ($1, $2, $3, $4)',
+        [conv.id, p.name, p.role, p.stakeholder_type || 'internal']
+      );
+    }
+
+    // Fetch with participants
+    const { rows: [result] } = await db.query(`
+      SELECT c.*,
+        (SELECT json_agg(json_build_object('name', cp2.contact_name, 'role', cp2.contact_role, 'type', cp2.stakeholder_type))
+         FROM conversation_participants cp2 WHERE cp2.conversation_id = c.id) as participants
+      FROM conversations c WHERE c.id = $1
+    `, [conv.id]);
+
+    // Notify participants via WebSocket
+    broadcastToConversation(conv.id, { type: 'conversation_created', conversation: result });
+
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** GET /api/conversations/:id/messages — messages in a conversation */
+app.get('/api/conversations/:id/messages', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const before = req.query.before;
+    let text = 'SELECT * FROM messages WHERE conversation_id = $1';
+    const params = [req.params.id];
+    if (before) {
+      text += ' AND created_at < $2';
+      params.push(before);
+    }
+    text += ' ORDER BY created_at DESC LIMIT $' + (params.length + 1);
+    params.push(limit);
+    const { rows } = await db.query(text, params);
+    res.json(rows.reverse()); // Return in chronological order
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** POST /api/conversations/:id/messages — send message to a conversation */
+app.post('/api/conversations/:id/messages', async (req, res) => {
+  try {
+    const { sender_name, sender_role, content, message_type } = req.body;
+    if (!content?.trim()) return res.status(400).json({ error: 'Content is required' });
+
+    const { rows: [newMsg] } = await db.query(
+      `INSERT INTO messages (sender_name, sender_role, content, conversation_id, message_type)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [sender_name, sender_role, content, req.params.id, message_type || 'text']
+    );
+
+    // Update conversation last_message
+    await db.query(
+      `UPDATE conversations SET last_message_preview = $1, last_message_at = NOW(), updated_at = NOW() WHERE id = $2`,
+      [content.substring(0, 100), req.params.id]
+    );
+
+    // Increment unread count for other participants
+    await db.query(
+      `UPDATE conversation_participants SET unread_count = unread_count + 1 WHERE conversation_id = $1 AND contact_name != $2`,
+      [req.params.id, sender_name]
+    );
+
+    // Broadcast to conversation participants via WebSocket
+    broadcastToConversation(req.params.id, {
+      type: 'new_message',
+      message: newMsg,
+      conversationId: parseInt(req.params.id),
+    });
+
+    res.status(201).json(newMsg);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ──────────────────────────────────────────────
+// MESSAGES (legacy broadcast — kept for backward compatibility)
 // ──────────────────────────────────────────────
 app.get('/api/messages', async (_req, res) => {
   try {
@@ -606,7 +830,7 @@ app.post('/api/readings', async (req, res) => {
 // ──────────────────────────────────────────────
 app.get('/api/backup', async (_req, res) => {
   try {
-    const tables = ['residents', 'alerts', 'tasks', 'messages', 'readings'];
+    const tables = ['residents', 'alerts', 'tasks', 'messages', 'readings', 'contacts', 'conversations', 'conversation_participants'];
     const snapshot = {};
     for (const table of tables) {
       const { rows } = await db.query(`SELECT * FROM ${table} ORDER BY id`);
@@ -623,7 +847,7 @@ app.post('/api/backup/restore', async (req, res) => {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
-    const tables = ['readings', 'messages', 'tasks', 'alerts', 'residents'];
+    const tables = ['readings', 'conversation_participants', 'messages', 'conversations', 'contacts', 'tasks', 'alerts', 'residents'];
 
     // Clear in reverse FK order
     for (const table of tables) {
@@ -631,7 +855,7 @@ app.post('/api/backup/restore', async (req, res) => {
     }
 
     // Insert in FK order (residents first), preserving original IDs
-    const insertOrder = ['residents', 'alerts', 'tasks', 'messages', 'readings'];
+    const insertOrder = ['residents', 'alerts', 'tasks', 'contacts', 'conversations', 'conversation_participants', 'messages', 'readings'];
     const counts = {};
     for (const table of insertOrder) {
       const rows = req.body[table];
@@ -689,6 +913,12 @@ server.listen(PORT, () => {
   console.log(`     POST   /api/tasks`);
   console.log(`     GET    /api/messages`);
   console.log(`     POST   /api/messages`);
+  console.log(`     GET    /api/contacts?type=internal|external`);
+  console.log(`     POST   /api/contacts`);
+  console.log(`     GET    /api/conversations?user=Name`);
+  console.log(`     POST   /api/conversations`);
+  console.log(`     GET    /api/conversations/:id/messages`);
+  console.log(`     POST   /api/conversations/:id/messages`);
   console.log(`     POST   /api/push-tokens`);
   console.log(`     DELETE /api/push-tokens/:token`);
   console.log(`     GET    /api/readings?residentId=:id`);

@@ -1,516 +1,432 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TextInput,
-  Animated,
-  Platform,
+  RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Send, MessageCircle, Sparkles, Wifi, WifiOff, CheckCheck, Check } from 'lucide-react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  MessageSquare,
+  Search,
+  Plus,
+  Users,
+  Hash,
+  Globe,
+  Wifi,
+  WifiOff,
+} from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
-import { format } from 'date-fns';
-import KeyboardAvoidingAnimatedView from '@/components/KeyboardAvoidingAnimatedView';
-import { colors, radius, shadows, typography, gradients, animation } from '../../theme';
-import { mockMessages } from '../../mockData';
+import { format, isToday, isYesterday } from 'date-fns';
+import { colors, radius, typography, gradients } from '../../theme';
 import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
 import AnimatedPressable from '../../components/AnimatedPressable';
-import { apiUrl } from '../../services/apiClient';
+import {
+  fetchConversations,
+  fetchContacts,
+  getCurrentUser,
+  getConversationDisplayName,
+  getConversationAvatar,
+  isExternalConversation,
+} from '../../services/messagingService';
 import { useRealtimeMessages } from '../../hooks/useRealtimeMessages';
-import { scheduleLocalNotification } from '../../services/pushNotifications';
+import ChatThread from '../../components/messaging/ChatThread';
+import ComposeMessage from '../../components/messaging/ComposeMessage';
 
 const ROLE_COLORS = {
   Doctor: { bg: '#EDE9FE', text: '#5B21B6' },
   Nurse: { bg: colors.primaryLight, text: colors.primary },
   CNA: { bg: '#FEF3C7', text: '#92400E' },
   Pharmacist: { bg: '#D1FAE5', text: '#065F46' },
+  GP: { bg: '#E0F2FE', text: '#0369A1' },
+  Family: { bg: '#FCE7F3', text: '#9D174D' },
+  Specialist: { bg: '#EDE9FE', text: '#5B21B6' },
+  'Allied Health': { bg: '#CCFBF1', text: '#115E59' },
+  Supplier: { bg: '#F1F5F9', text: '#475569' },
+  Pharmacy: { bg: '#D1FAE5', text: '#065F46' },
 };
 
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const [content, setContent] = useState('');
-  const scrollRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
-  const pulseAnim = useRef(new Animated.Value(0.4)).current;
+  const currentUser = getCurrentUser();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeConversation, setActiveConversation] = useState(null);
+  const [showCompose, setShowCompose] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('all');
 
-  // Real-time WebSocket connection
-  const { connected, onlineUsers, typingUsers, sendTyping, sendReadReceipt } =
-    useRealtimeMessages({ userName: 'Nurse Sarah', userRole: 'Nurse' });
-
-  // Pulse animation for typing indicator
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 0.4, duration: 600, useNativeDriver: true }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [pulseAnim]);
-
-  const { data: messages = mockMessages, isLoading } = useQuery({
-    queryKey: ['messages'],
-    queryFn: async () => {
-      const response = await fetch(apiUrl('/api/messages'));
-      if (!response.ok)
-        throw new Error(`Messages fetch failed: ${response.status}`);
-      return response.json();
-    },
-    placeholderData: mockMessages,
+  const { connected, onlineUsers } = useRealtimeMessages({
+    userName: currentUser.name,
+    userRole: currentUser.role,
   });
 
-  const sendMessageMutation = useMutation({
-    mutationFn: async (msg) => {
-      const response = await fetch(apiUrl('/api/messages'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...msg,
-          sender_name: 'Nurse Sarah',
-          sender_role: 'Nurse',
-        }),
-      });
-      if (!response.ok)
-        throw new Error(`Message send failed: ${response.status}`);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
-      setContent('');
-    },
+  // Fetch conversations
+  const {
+    data: conversations = [],
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ['conversations'],
+    queryFn: () => fetchConversations(currentUser.name),
+    refetchInterval: 15000,
   });
 
-  const handleSend = () => {
-    if (content.trim()) {
-      sendTyping(false);
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      sendMessageMutation.mutate({ content: content.trim() });
-    }
+  // Fetch contacts for compose
+  const { data: contacts = [] } = useQuery({
+    queryKey: ['contacts'],
+    queryFn: () => fetchContacts(),
+  });
+
+  const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+
+  const filteredConversations = conversations.filter((conv) => {
+    const name = getConversationDisplayName(conv, currentUser.name).toLowerCase();
+    const matchesSearch = !searchQuery || name.includes(searchQuery.toLowerCase());
+
+    if (activeFilter === 'all') return matchesSearch;
+    if (activeFilter === 'direct') return matchesSearch && conv.type === 'direct';
+    if (activeFilter === 'groups') return matchesSearch && (conv.type === 'group' || conv.type === 'channel');
+    if (activeFilter === 'external') return matchesSearch && isExternalConversation(conv);
+    if (activeFilter === 'unread') return matchesSearch && conv.unread_count > 0;
+    return matchesSearch;
+  });
+
+  const formatTime = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (isToday(date)) return format(date, 'h:mm a');
+    if (isYesterday(date)) return 'Yesterday';
+    return format(date, 'MMM d');
   };
 
-  const handleTextChange = useCallback((text) => {
-    setContent(text);
-    // Send typing indicator
-    if (text.trim()) {
-      sendTyping(true);
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = setTimeout(() => sendTyping(false), 3000);
-    } else {
-      sendTyping(false);
-    }
-  }, [sendTyping]);
+  const handleNewConversation = (conv) => {
+    setShowCompose(false);
+    setActiveConversation(conv);
+    queryClient.invalidateQueries({ queryKey: ['conversations'] });
+  };
 
-  useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-      // Send read receipt for latest message
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg && !isOwnMessage(lastMsg)) {
-        sendReadReceipt(lastMsg.id);
-      }
-    }
-  }, [messages.length, sendReadReceipt]);
+  // If viewing a conversation thread
+  if (activeConversation) {
+    return (
+      <ChatThread
+        conversation={activeConversation}
+        onBack={() => {
+          setActiveConversation(null);
+          queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        }}
+      />
+    );
+  }
 
-  const isOwnMessage = (msg) => msg.sender_role === 'Nurse';
+  // If composing new message
+  if (showCompose) {
+    return (
+      <ComposeMessage
+        contacts={contacts}
+        onBack={() => setShowCompose(false)}
+        onConversationCreated={handleNewConversation}
+      />
+    );
+  }
+
+  const FILTERS = [
+    { key: 'all', label: 'All' },
+    { key: 'unread', label: 'Unread', count: totalUnread },
+    { key: 'direct', label: 'Direct' },
+    { key: 'groups', label: 'Groups' },
+    { key: 'external', label: 'External' },
+  ];
 
   return (
-    <KeyboardAvoidingAnimatedView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      behavior="padding"
-    >
-      <View style={{ flex: 1 }}>
-        {/* Gradient Header */}
-        <LinearGradient
-          colors={gradients.headerVibrant}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            paddingTop: insets.top + 8,
-            paddingHorizontal: 20,
-            paddingBottom: 18,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View>
-              <Text style={[typography.title2, { color: colors.textInverse }]}>
-                Care Team
-              </Text>
-              <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>
-                Secure clinical messaging
-              </Text>
-            </View>
-            {/* Real-time connection indicator */}
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Gradient Header */}
+      <LinearGradient
+        colors={gradients.headerVibrant}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          paddingTop: insets.top + 8,
+          paddingHorizontal: 20,
+          paddingBottom: 16,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flex: 1 }}>
+            <Text style={[typography.title2, { color: colors.textInverse }]}>Messages</Text>
+            <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>
+              {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
+              {totalUnread > 0 ? ` · ${totalUnread} unread` : ''}
+            </Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            {/* Connection indicator */}
             <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 6,
+              flexDirection: 'row', alignItems: 'center', gap: 5,
               backgroundColor: connected ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)',
-              paddingHorizontal: 10,
-              paddingVertical: 5,
-              borderRadius: radius.full,
+              paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.full,
               borderWidth: 1,
               borderColor: connected ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
             }}>
               {connected
-                ? <Wifi size={13} color="#4ADE80" />
-                : <WifiOff size={13} color="#FCA5A5" />}
-              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textInverse }}>
+                ? <Wifi size={12} color="#4ADE80" />
+                : <WifiOff size={12} color="#FCA5A5" />}
+              <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textInverse }}>
                 {connected ? 'Live' : 'Offline'}
               </Text>
             </View>
-          </View>
 
-          {/* Online users row */}
-          {onlineUsers.length > 0 && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 6 }}>
-              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
-                Online:
-              </Text>
-              {onlineUsers.slice(0, 5).map((u, i) => (
-                <View key={i} style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  backgroundColor: 'rgba(255,255,255,0.12)',
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
-                  borderRadius: radius.full,
-                }}>
-                  <View style={{
-                    width: 6, height: 6, borderRadius: 3,
-                    backgroundColor: '#4ADE80',
-                  }} />
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>
-                    {u.name}
+            {/* New message button */}
+            <AnimatedPressable onPress={() => setShowCompose(true)} hapticType="medium">
+              <View style={{
+                width: 36, height: 36, borderRadius: 18,
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Plus size={20} color={colors.textInverse} strokeWidth={2.5} />
+              </View>
+            </AnimatedPressable>
+          </View>
+        </View>
+
+        {/* Search bar */}
+        <View style={{
+          flexDirection: 'row', alignItems: 'center',
+          backgroundColor: 'rgba(255,255,255,0.15)',
+          borderRadius: radius.xl, paddingHorizontal: 14,
+          height: 40, marginTop: 14, gap: 8,
+        }}>
+          <Search size={16} color="rgba(255,255,255,0.5)" />
+          <TextInput
+            placeholder="Search conversations..."
+            placeholderTextColor="rgba(255,255,255,0.4)"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            style={{ flex: 1, fontSize: 15, color: colors.textInverse }}
+          />
+        </View>
+
+        {/* Online users */}
+        {onlineUsers.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {onlineUsers.map((u, i) => (
+                <View key={i} style={{ alignItems: 'center', gap: 3 }}>
+                  <View style={{ position: 'relative' }}>
+                    <Avatar name={u.name} size={36} />
+                    <View style={{
+                      position: 'absolute', bottom: 0, right: 0,
+                      width: 10, height: 10, borderRadius: 5,
+                      backgroundColor: '#4ADE80', borderWidth: 2,
+                      borderColor: '#1E3A8A',
+                    }} />
+                  </View>
+                  <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: '500' }}>
+                    {u.name.split(' ')[0]}
                   </Text>
                 </View>
               ))}
-              {onlineUsers.length > 5 && (
-                <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
-                  +{onlineUsers.length - 5} more
-                </Text>
-              )}
             </View>
-          )}
-
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              marginTop: 10,
-              gap: 12,
-            }}
-          >
-            {Object.entries(ROLE_COLORS).map(([role, config]) => (
-              <View
-                key={role}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 5,
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
-                  borderRadius: radius.full,
-                }}
-              >
-                <View
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: 3.5,
-                    backgroundColor: config.text,
-                  }}
-                />
-                <Text style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>
-                  {role}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </LinearGradient>
-
-        <ScrollView
-          ref={scrollRef}
-          style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 20, paddingBottom: 20 }}
-          showsVerticalScrollIndicator={false}
-        >
-          {isLoading && !messages.length ? (
-            <EmptyState
-              icon={<MessageCircle size={40} color={colors.textMuted} />}
-              title="Loading messages..."
-            />
-          ) : messages.length === 0 ? (
-            <EmptyState
-              icon={<MessageCircle size={40} color={colors.textMuted} />}
-              title="No messages yet"
-              subtitle="Start the conversation with your care team"
-            />
-          ) : (
-            messages.map((msg, idx) => {
-              const own = isOwnMessage(msg);
-              const roleConfig =
-                ROLE_COLORS[msg.sender_role] || ROLE_COLORS.CNA;
-              const showAvatar =
-                !own &&
-                (idx === 0 ||
-                  messages[idx - 1].sender_name !== msg.sender_name);
-
-              return (
-                <View
-                  key={msg.id}
-                  style={{
-                    flexDirection: 'row',
-                    alignSelf: own ? 'flex-end' : 'flex-start',
-                    maxWidth: '82%',
-                    marginBottom: 12,
-                    gap: 8,
-                  }}
-                >
-                  {/* Avatar for others */}
-                  {!own && (
-                    <View
-                      style={{
-                        width: 32,
-                        alignItems: 'center',
-                        justifyContent: 'flex-end',
-                      }}
-                    >
-                      {showAvatar ? (
-                        <Avatar name={msg.sender_name} size={32} />
-                      ) : null}
-                    </View>
-                  )}
-
-                  <View style={{ flex: 1 }}>
-                    {/* Sender name for others */}
-                    {showAvatar && !own && (
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          marginBottom: 4,
-                          gap: 6,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            fontWeight: '600',
-                            color: colors.textTertiary,
-                          }}
-                        >
-                          {msg.sender_name}
-                        </Text>
-                        <View
-                          style={{
-                            backgroundColor: roleConfig.bg,
-                            paddingHorizontal: 6,
-                            paddingVertical: 1,
-                            borderRadius: 4,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 10,
-                              fontWeight: '700',
-                              color: roleConfig.text,
-                            }}
-                          >
-                            {msg.sender_role}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
-
-                    {/* Message bubble */}
-                    {own ? (
-                      <LinearGradient
-                        colors={['#1E40AF', '#2563EB', '#3B82F6']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={{
-                          borderRadius: 20,
-                          borderTopRightRadius: 6,
-                          paddingHorizontal: 16,
-                          paddingVertical: 11,
-                          ...shadows.colored(colors.primary),
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 15,
-                            color: colors.textInverse,
-                            lineHeight: 22,
-                          }}
-                        >
-                          {msg.content}
-                        </Text>
-                      </LinearGradient>
-                    ) : (
-                      <View
-                        style={{
-                          backgroundColor: colors.surface,
-                          borderRadius: 20,
-                          borderTopLeftRadius: 6,
-                          paddingHorizontal: 16,
-                          paddingVertical: 11,
-                          borderWidth: 1,
-                          borderColor: colors.surfaceBorder,
-                          ...shadows.sm,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 15,
-                            color: colors.text,
-                            lineHeight: 22,
-                          }}
-                        >
-                          {msg.content}
-                        </Text>
-                      </View>
-                    )}
-
-                    {/* Timestamp + delivery receipt */}
-                    <View style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 4,
-                      marginTop: 3,
-                      alignSelf: own ? 'flex-end' : 'flex-start',
-                    }}>
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          color: colors.textMuted,
-                        }}
-                      >
-                        {format(new Date(msg.created_at), 'h:mm a')}
-                      </Text>
-                      {own && (
-                        msg.read_by?.length > 0
-                          ? <CheckCheck size={13} color={colors.primary} />
-                          : <Check size={13} color={colors.textMuted} />
-                      )}
-                    </View>
-                  </View>
-                </View>
-              );
-            })
-          )}
-        </ScrollView>
-
-        {/* Typing indicator */}
-        {typingUsers.length > 0 && (
-          <View style={{
-            paddingHorizontal: 20,
-            paddingVertical: 8,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            backgroundColor: colors.background,
-          }}>
-            <View style={{ flexDirection: 'row', gap: 3, alignItems: 'center' }}>
-              {[0, 1, 2].map((i) => (
-                <Animated.View
-                  key={i}
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: colors.primary,
-                    opacity: pulseAnim,
-                    transform: [{
-                      translateY: pulseAnim.interpolate({
-                        inputRange: [0.4, 1],
-                        outputRange: [0, i === 1 ? -4 : -2],
-                      }),
-                    }],
-                  }}
-                />
-              ))}
-            </View>
-            <Text style={{ fontSize: 12, color: colors.textMuted, fontStyle: 'italic' }}>
-              {typingUsers.length === 1
-                ? `${typingUsers[0]} is typing...`
-                : `${typingUsers.slice(0, 2).join(', ')} ${typingUsers.length > 2 ? `+${typingUsers.length - 2}` : ''} typing...`}
-            </Text>
-          </View>
+          </ScrollView>
         )}
 
-        {/* Glass Input Bar */}
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingTop: 10,
-            paddingBottom: 12,
-            backgroundColor: Platform.OS === 'ios' ? 'rgba(255,255,255,0.85)' : colors.surface,
-            borderTopWidth: 0.5,
-            borderColor: 'rgba(0,0,0,0.06)',
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            gap: 10,
-            ...shadows.sm,
-          }}
-        >
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: colors.surfaceSecondary,
-              borderRadius: 24,
-              borderWidth: 1,
-              borderColor: colors.borderLight,
-              overflow: 'hidden',
-            }}
-          >
-            <TextInput
-              placeholder="Type a message..."
-              placeholderTextColor={colors.textMuted}
-              value={content}
-              onChangeText={handleTextChange}
-              multiline
-              style={{
-                paddingHorizontal: 18,
-                paddingTop: 12,
-                paddingBottom: 12,
-                fontSize: 16,
-                color: colors.text,
-                maxHeight: 100,
-                minHeight: 44,
-              }}
-            />
+        {/* Filter chips */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {FILTERS.map((f) => (
+              <AnimatedPressable key={f.key} onPress={() => setActiveFilter(f.key)} hapticType="light">
+                <View style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 4,
+                  paddingHorizontal: 12, paddingVertical: 6,
+                  borderRadius: radius.full,
+                  backgroundColor: activeFilter === f.key ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                  borderWidth: 1,
+                  borderColor: activeFilter === f.key ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
+                }}>
+                  <Text style={{
+                    fontSize: 12, fontWeight: '600',
+                    color: activeFilter === f.key ? colors.textInverse : 'rgba(255,255,255,0.6)',
+                  }}>
+                    {f.label}
+                  </Text>
+                  {f.count > 0 && (
+                    <View style={{
+                      backgroundColor: colors.danger, borderRadius: 8,
+                      minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center',
+                      paddingHorizontal: 4,
+                    }}>
+                      <Text style={{ fontSize: 10, fontWeight: '700', color: '#FFF' }}>{f.count}</Text>
+                    </View>
+                  )}
+                </View>
+              </AnimatedPressable>
+            ))}
           </View>
-          <AnimatedPressable
-            onPress={handleSend}
-            disabled={!content.trim()}
-            hapticType="medium"
-          >
-            <LinearGradient
-              colors={content.trim() ? gradients.primary : [colors.divider, colors.divider]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                width: 46,
-                height: 46,
-                borderRadius: 23,
-                alignItems: 'center',
-                justifyContent: 'center',
-                ...(content.trim() ? shadows.colored(colors.primary) : {}),
-              }}
-            >
-              <Send size={20} color={colors.textInverse} />
-            </LinearGradient>
-          </AnimatedPressable>
-        </View>
-      </View>
-    </KeyboardAvoidingAnimatedView>
+        </ScrollView>
+      </LinearGradient>
+
+      {/* Conversation List */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.primary} />
+        }
+      >
+        {filteredConversations.length === 0 ? (
+          <EmptyState
+            icon={<MessageSquare size={40} color={colors.textMuted} />}
+            title={searchQuery ? 'No conversations found' : 'No messages yet'}
+            subtitle={searchQuery ? 'Try a different search' : 'Start a conversation with your care team'}
+          />
+        ) : (
+          filteredConversations.map((conv) => {
+            const displayName = getConversationDisplayName(conv, currentUser.name);
+            const avatar = getConversationAvatar(conv, currentUser.name);
+            const isExternal = isExternalConversation(conv);
+            const hasUnread = (conv.unread_count || 0) > 0;
+            const otherRole = avatar?.role || conv.participants?.[0]?.role || 'Nurse';
+            const roleConfig = ROLE_COLORS[otherRole] || ROLE_COLORS.Nurse;
+            const participantCount = conv.participants?.length || 0;
+            const onlineParticipants = conv.participants?.filter(p =>
+              onlineUsers.some(u => u.name === p.name)
+            ).length || 0;
+
+            return (
+              <AnimatedPressable
+                key={conv.id}
+                onPress={() => setActiveConversation(conv)}
+                hapticType="light"
+              >
+                <View style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  paddingHorizontal: 20, paddingVertical: 14,
+                  backgroundColor: hasUnread ? 'rgba(37,99,235,0.03)' : 'transparent',
+                  borderBottomWidth: 0.5,
+                  borderBottomColor: colors.borderLight,
+                  gap: 14,
+                }}>
+                  {/* Avatar */}
+                  <View style={{ position: 'relative' }}>
+                    {conv.type === 'channel' ? (
+                      <View style={{
+                        width: 50, height: 50, borderRadius: 16,
+                        backgroundColor: colors.primaryLight,
+                        alignItems: 'center', justifyContent: 'center',
+                        borderWidth: 1, borderColor: colors.primaryBorder,
+                      }}>
+                        <Hash size={24} color={colors.primary} />
+                      </View>
+                    ) : conv.type === 'group' ? (
+                      <View style={{
+                        width: 50, height: 50, borderRadius: 16,
+                        backgroundColor: isExternal ? '#FCE7F3' : '#EDE9FE',
+                        alignItems: 'center', justifyContent: 'center',
+                        borderWidth: 1, borderColor: isExternal ? '#FBCFE8' : '#DDD6FE',
+                      }}>
+                        {isExternal
+                          ? <Globe size={24} color="#9D174D" />
+                          : <Users size={24} color="#5B21B6" />}
+                      </View>
+                    ) : (
+                      <View>
+                        <Avatar name={displayName} size={50} />
+                        {onlineUsers.some(u => u.name === displayName) && (
+                          <View style={{
+                            position: 'absolute', bottom: 1, right: 1,
+                            width: 12, height: 12, borderRadius: 6,
+                            backgroundColor: '#4ADE80',
+                            borderWidth: 2, borderColor: colors.surface,
+                          }} />
+                        )}
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Content */}
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                      <Text
+                        style={{
+                          fontSize: 16, fontWeight: hasUnread ? '700' : '600',
+                          color: colors.text, flex: 1,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {displayName}
+                      </Text>
+                      <Text style={{
+                        fontSize: 12, color: hasUnread ? colors.primary : colors.textMuted,
+                        fontWeight: hasUnread ? '600' : '400',
+                      }}>
+                        {formatTime(conv.last_message_at)}
+                      </Text>
+                    </View>
+
+                    {/* Role badge + participant info */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      {conv.type === 'direct' && avatar && (
+                        <View style={{
+                          backgroundColor: roleConfig.bg,
+                          paddingHorizontal: 6, paddingVertical: 1,
+                          borderRadius: 4,
+                        }}>
+                          <Text style={{ fontSize: 10, fontWeight: '700', color: roleConfig.text }}>
+                            {avatar.role}
+                          </Text>
+                        </View>
+                      )}
+                      {isExternal && (
+                        <View style={{
+                          backgroundColor: '#FCE7F3',
+                          paddingHorizontal: 6, paddingVertical: 1,
+                          borderRadius: 4,
+                        }}>
+                          <Text style={{ fontSize: 10, fontWeight: '700', color: '#9D174D' }}>External</Text>
+                        </View>
+                      )}
+                      {(conv.type === 'group' || conv.type === 'channel') && (
+                        <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                          {participantCount} members
+                          {onlineParticipants > 0 ? ` · ${onlineParticipants} online` : ''}
+                        </Text>
+                      )}
+                    </View>
+
+                    {/* Last message preview */}
+                    <Text
+                      style={{
+                        fontSize: 14, color: hasUnread ? colors.textSecondary : colors.textMuted,
+                        fontWeight: hasUnread ? '500' : '400',
+                      }}
+                      numberOfLines={1}
+                    >
+                      {conv.last_message_preview || 'No messages yet'}
+                    </Text>
+                  </View>
+
+                  {/* Unread badge */}
+                  {hasUnread && (
+                    <View style={{
+                      backgroundColor: colors.primary,
+                      borderRadius: 12, minWidth: 24, height: 24,
+                      alignItems: 'center', justifyContent: 'center',
+                      paddingHorizontal: 6,
+                    }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFF' }}>
+                        {conv.unread_count}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </AnimatedPressable>
+            );
+          })
+        )}
+      </ScrollView>
+    </View>
   );
 }

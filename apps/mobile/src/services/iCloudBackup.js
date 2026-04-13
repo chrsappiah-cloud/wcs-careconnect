@@ -12,7 +12,7 @@ import { apiUrl } from './apiClient';
 const BACKUP_PREFIX = '@careconnect_backup_';
 const BACKUP_META_KEY = '@careconnect_backup_meta';
 
-const TABLES = ['residents', 'alerts', 'tasks', 'messages', 'readings'];
+const TABLES = ['residents', 'alerts', 'tasks', 'contacts', 'conversations', 'conversation_participants', 'messages', 'readings'];
 
 /**
  * Fetch all data from the backend and save a snapshot to AsyncStorage (→ iCloud).
