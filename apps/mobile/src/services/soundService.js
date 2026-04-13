@@ -2,12 +2,12 @@ import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 
 const SOUNDS = {
-  critical: require('../../../assets/sounds/critical_alert.wav'),
-  warning: require('../../../assets/sounds/warning_alert.wav'),
-  info: require('../../../assets/sounds/info_alert.wav'),
-  acknowledge: require('../../../assets/sounds/acknowledge.wav'),
-  escalation: require('../../../assets/sounds/escalation.wav'),
-  newAlert: require('../../../assets/sounds/new_alert.wav'),
+  critical: require('../../assets/sounds/critical_alert.wav'),
+  warning: require('../../assets/sounds/warning_alert.wav'),
+  info: require('../../assets/sounds/info_alert.wav'),
+  acknowledge: require('../../assets/sounds/acknowledge.wav'),
+  escalation: require('../../assets/sounds/escalation.wav'),
+  newAlert: require('../../assets/sounds/new_alert.wav'),
 };
 
 let soundCache = {};
