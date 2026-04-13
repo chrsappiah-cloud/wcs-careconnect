@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Platform, View, StyleSheet } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import React, { useEffect } from 'react';
 import { BlurView } from 'expo-blur';
 import {
   Users,
@@ -15,6 +16,8 @@ import {
 import { colors, shadows } from '../../theme';
 import { mockAlerts } from '../../mockData';
 import { apiUrl } from '../../services/apiClient';
+import { initAudio, unloadAll } from '../../services/soundService';
+import { startWSManager, stopWSManager } from '../../services/wsClient';
 
 function FloatingTabBackground() {
   if (Platform.OS === 'ios') {
@@ -65,6 +68,16 @@ const floatingStyles = StyleSheet.create({
 });
 
 export default function TabLayout() {
+  // Initialize audio system and WebSocket connection
+  useEffect(() => {
+    initAudio();
+    startWSManager();
+    return () => {
+      stopWSManager();
+      unloadAll();
+    };
+  }, []);
+
   const { data: alerts = mockAlerts } = useQuery({
     queryKey: ['alerts'],
     queryFn: async () => {

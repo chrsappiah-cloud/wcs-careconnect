@@ -264,6 +264,12 @@ app.patch('/api/alerts/:id', async (req, res) => {
       values
     );
     if (!rows.length) return res.status(404).json({ error: 'Not found' });
+
+    // Broadcast acknowledgement event via WebSocket
+    if (req.body.status === 'acknowledged') {
+      broadcast({ type: 'alert_acknowledged', alert: rows[0] });
+    }
+
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });

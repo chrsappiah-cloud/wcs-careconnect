@@ -45,6 +45,7 @@ import { SkeletonList } from '../../components/Skeleton';
 import { apiUrl } from '../../services/apiClient';
 import { haptic } from '../../utils/haptics';
 import { getAUClinicalContext } from '../../services/auHealthAlertService';
+import { playAcknowledgeSound, playEscalationSound, playAlertBySeverity } from '../../services/soundService';
 
 const SEVERITY_CONFIG = {
   critical: {
@@ -349,6 +350,7 @@ export default function AlertsScreen() {
     },
     onSuccess: () => {
       haptic.success();
+      playAcknowledgeSound();
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
       queryClient.invalidateQueries({ queryKey: ['residents'] });
     },
@@ -366,6 +368,7 @@ export default function AlertsScreen() {
     },
     onSuccess: () => {
       haptic.success();
+      playEscalationSound();
       setEscalationModal({ visible: false, alert: null, auContext: null });
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
       RNAlert.alert(
@@ -480,7 +483,10 @@ export default function AlertsScreen() {
             ].map((f) => (
               <AnimatedPressable
                 key={f.key}
-                onPress={() => setSeverityFilter(f.key)}
+                onPress={() => {
+                  setSeverityFilter(f.key);
+                  if (f.key === 'critical' || f.key === 'warning') playAlertBySeverity(f.key);
+                }}
                 hapticType="selection"
               >
                 <View

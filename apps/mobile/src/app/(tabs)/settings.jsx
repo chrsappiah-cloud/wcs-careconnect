@@ -29,6 +29,7 @@ import {
   CloudOff,
   RefreshCw,
   Download,
+  Volume2,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -46,6 +47,7 @@ import {
   registerForPushNotifications,
   unregisterPushNotifications,
 } from '../../services/pushNotifications';
+import { isAudioEnabled, setAudioEnabled } from '../../services/soundService';
 
 const SETTINGS_KEY = '@careconnect_settings';
 const TIMEOUT_OPTIONS = ['5 mins', '10 mins', '15 mins', '20 mins', '30 mins'];
@@ -56,6 +58,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const [pushAlerts, setPushAlerts] = useState(true);
   const [highPriorityOnly, setHighPriorityOnly] = useState(false);
+  const [soundEffects, setSoundEffects] = useState(isAudioEnabled());
   const [biometricUnlock, setBiometricUnlock] = useState(true);
   const [sessionTimeout, setSessionTimeout] = useState('20 mins');
 
@@ -68,6 +71,10 @@ export default function SettingsScreen() {
           if (saved.pushAlerts != null) setPushAlerts(saved.pushAlerts);
           if (saved.highPriorityOnly != null)
             setHighPriorityOnly(saved.highPriorityOnly);
+          if (saved.soundEffects != null) {
+            setSoundEffects(saved.soundEffects);
+            setAudioEnabled(saved.soundEffects);
+          }
           if (saved.biometricUnlock != null)
             setBiometricUnlock(saved.biometricUnlock);
           if (saved.sessionTimeout) setSessionTimeout(saved.sessionTimeout);
@@ -289,6 +296,18 @@ export default function SettingsScreen() {
             onValueChange={(v) => {
               setHighPriorityOnly(v);
               persistSettings({ highPriorityOnly: v });
+            }}
+          />
+          <SettingsItem
+            icon={<Volume2 size={20} color={colors.accent} />}
+            label="Sound Effects"
+            subtitle="Play sounds for alerts and actions"
+            type="switch"
+            value={soundEffects}
+            onValueChange={(v) => {
+              setSoundEffects(v);
+              setAudioEnabled(v);
+              persistSettings({ soundEffects: v });
             }}
             last
           />
