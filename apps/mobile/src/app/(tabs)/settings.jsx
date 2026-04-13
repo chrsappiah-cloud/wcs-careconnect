@@ -41,6 +41,10 @@ import { haptic } from '../../utils/haptics';
 import { useBackupManager } from '../../hooks/useBackupManager';
 import { restoreToServer, clearBackup } from '../../services/iCloudBackup';
 import { isOnline } from '../../services/syncManager';
+import {
+  registerForPushNotifications,
+  unregisterPushNotifications,
+} from '../../services/pushNotifications';
 
 const SETTINGS_KEY = '@careconnect_settings';
 const TIMEOUT_OPTIONS = ['5 mins', '10 mins', '15 mins', '20 mins', '30 mins'];
@@ -267,6 +271,11 @@ export default function SettingsScreen() {
             onValueChange={(v) => {
               setPushAlerts(v);
               persistSettings({ pushAlerts: v });
+              if (v) {
+                registerForPushNotifications(userName, userRole).catch(() => {});
+              } else {
+                unregisterPushNotifications().catch(() => {});
+              }
             }}
           />
           <SettingsItem

@@ -1,9 +1,74 @@
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
+const { WebSocketServer, WebSocket } = require('ws');
 const db = require('./db');
 
 const PORT = process.env.PORT || 3001;
 const app = express();
+const server = http.createServer(app);
+
+// ──────────────────────────────────────────────
+// WEBSOCKET — Real-time messaging
+// ──────────────────────────────────────────────
+const wss = new WebSocketServer({ server, path: '/ws' });
+
+// Connected clients: Map<ws, { userId, name, role }>
+const clients = new Map();
+
+function broadcast(data, excludeWs) {
+  const payload = JSON.stringify(data);
+  for (const [ws] of clients) {
+    if (ws !== excludeWs && ws.readyState === WebSocket.OPEN) {
+      ws.send(payload);
+    }
+  }
+}
+
+function broadcastPresence() {
+  const users = [];
+  for (const [, info] of clients) {
+    if (info.name) users.push({ name: info.name, role: info.role });
+  }
+  const payload = JSON.stringify({ type: 'presence', users });
+  for (const [ws] of clients) {
+    if (ws.readyState === WebSocket.OPEN) ws.send(payload);
+  }
+}
+
+wss.on('connection', (ws) => {
+  clients.set(ws, { userId: null, name: null, role: null });
+
+  ws.on('message', (raw) => {
+    let msg;
+    try { msg = JSON.parse(raw); } catch { return; }
+
+    const info = clients.get(ws);
+
+    switch (msg.type) {
+      case 'join': {
+        info.name = msg.name;
+        info.role = msg.role;
+        info.userId = msg.userId || msg.name;
+        broadcastPresence();
+        break;
+      }
+      case 'typing': {
+        broadcast({ type: 'typing', name: info.name, isTyping: msg.isTyping }, ws);
+        break;
+      }
+      case 'read_receipt': {
+        broadcast({ type: 'read_receipt', messageId: msg.messageId, reader: info.name }, ws);
+        break;
+      }
+    }
+  });
+
+  ws.on('close', () => {
+    clients.delete(ws);
+    broadcastPresence();
+  });
+});
 
 // Middleware
 app.use(cors());
@@ -152,7 +217,39 @@ app.post('/api/messages', async (req, res) => {
       `INSERT INTO messages (sender_name, sender_role, content) VALUES ($1, $2, $3) RETURNING *`,
       [sender_name, sender_role, content]
     );
-    res.status(201).json(rows[0]);
+    const newMsg = rows[0];
+    // Broadcast to all WebSocket clients
+    broadcast({ type: 'new_message', message: newMsg });
+    res.status(201).json(newMsg);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ──────────────────────────────────────────────
+// PUSH TOKEN REGISTRATION (APNs)
+// ──────────────────────────────────────────────
+app.post('/api/push-tokens', async (req, res) => {
+  try {
+    const { token, platform, user_name, user_role } = req.body;
+    if (!token) return res.status(400).json({ error: 'Token required' });
+    // Upsert: insert or update on conflict
+    await db.query(
+      `INSERT INTO push_tokens (token, platform, user_name, user_role, updated_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (token) DO UPDATE SET user_name = $3, user_role = $4, updated_at = NOW()`,
+      [token, platform || 'ios', user_name, user_role]
+    );
+    res.json({ registered: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/push-tokens/:token', async (req, res) => {
+  try {
+    await db.query('DELETE FROM push_tokens WHERE token = $1', [req.params.token]);
+    res.json({ unregistered: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -262,8 +359,9 @@ app.post('/api/backup/restore', async (req, res) => {
 // ──────────────────────────────────────────────
 // START
 // ──────────────────────────────────────────────
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`\n  🏥 CareConnect API Server running at http://localhost:${PORT}`);
+  console.log(`  🔌 WebSocket server running at ws://localhost:${PORT}/ws`);
   console.log(`  🐘 Connected to Supabase PostgreSQL`);
   console.log(`  📋 Endpoints:`);
   console.log(`     GET    /api/residents`);
@@ -275,8 +373,11 @@ app.listen(PORT, () => {
   console.log(`     POST   /api/tasks`);
   console.log(`     GET    /api/messages`);
   console.log(`     POST   /api/messages`);
+  console.log(`     POST   /api/push-tokens`);
+  console.log(`     DELETE /api/push-tokens/:token`);
   console.log(`     GET    /api/readings?residentId=:id`);
   console.log(`     POST   /api/readings`);
   console.log(`     GET    /api/backup`);
-  console.log(`     POST   /api/backup/restore\n`);
+  console.log(`     POST   /api/backup/restore`);
+  console.log(`     WS     /ws  (real-time messaging)\n`);
 });

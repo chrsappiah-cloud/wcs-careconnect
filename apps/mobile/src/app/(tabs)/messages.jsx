@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Send, MessageCircle, Sparkles } from 'lucide-react-native';
+import { Send, MessageCircle, Sparkles, Wifi, WifiOff, CheckCheck, Check } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { format } from 'date-fns';
@@ -20,6 +20,8 @@ import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
 import AnimatedPressable from '../../components/AnimatedPressable';
 import { apiUrl } from '../../services/apiClient';
+import { useRealtimeMessages } from '../../hooks/useRealtimeMessages';
+import { scheduleLocalNotification } from '../../services/pushNotifications';
 
 const ROLE_COLORS = {
   Doctor: { bg: '#EDE9FE', text: '#5B21B6' },
@@ -33,6 +35,24 @@ export default function MessagesScreen() {
   const queryClient = useQueryClient();
   const [content, setContent] = useState('');
   const scrollRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const pulseAnim = useRef(new Animated.Value(0.4)).current;
+
+  // Real-time WebSocket connection
+  const { connected, onlineUsers, typingUsers, sendTyping, sendReadReceipt } =
+    useRealtimeMessages({ userName: 'Nurse Sarah', userRole: 'Nurse' });
+
+  // Pulse animation for typing indicator
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.4, duration: 600, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [pulseAnim]);
 
   const { data: messages = mockMessages, isLoading } = useQuery({
     queryKey: ['messages'],
@@ -68,15 +88,34 @@ export default function MessagesScreen() {
 
   const handleSend = () => {
     if (content.trim()) {
+      sendTyping(false);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       sendMessageMutation.mutate({ content: content.trim() });
     }
   };
 
+  const handleTextChange = useCallback((text) => {
+    setContent(text);
+    // Send typing indicator
+    if (text.trim()) {
+      sendTyping(true);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => sendTyping(false), 3000);
+    } else {
+      sendTyping(false);
+    }
+  }, [sendTyping]);
+
   useEffect(() => {
     if (messages.length > 0) {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+      // Send read receipt for latest message
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg && !isOwnMessage(lastMsg)) {
+        sendReadReceipt(lastMsg.id);
+      }
     }
-  }, [messages.length]);
+  }, [messages.length, sendReadReceipt]);
 
   const isOwnMessage = (msg) => msg.sender_role === 'Nurse';
 
@@ -97,12 +136,69 @@ export default function MessagesScreen() {
             paddingBottom: 18,
           }}
         >
-          <Text style={[typography.title2, { color: colors.textInverse }]}>
-            Care Team
-          </Text>
-          <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>
-            Secure clinical messaging
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View>
+              <Text style={[typography.title2, { color: colors.textInverse }]}>
+                Care Team
+              </Text>
+              <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>
+                Secure clinical messaging
+              </Text>
+            </View>
+            {/* Real-time connection indicator */}
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              backgroundColor: connected ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)',
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: radius.full,
+              borderWidth: 1,
+              borderColor: connected ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
+            }}>
+              {connected
+                ? <Wifi size={13} color="#4ADE80" />
+                : <WifiOff size={13} color="#FCA5A5" />}
+              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textInverse }}>
+                {connected ? 'Live' : 'Offline'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Online users row */}
+          {onlineUsers.length > 0 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 6 }}>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
+                Online:
+              </Text>
+              {onlineUsers.slice(0, 5).map((u, i) => (
+                <View key={i} style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: 'rgba(255,255,255,0.12)',
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: radius.full,
+                }}>
+                  <View style={{
+                    width: 6, height: 6, borderRadius: 3,
+                    backgroundColor: '#4ADE80',
+                  }} />
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>
+                    {u.name}
+                  </Text>
+                </View>
+              ))}
+              {onlineUsers.length > 5 && (
+                <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
+                  +{onlineUsers.length - 5} more
+                </Text>
+              )}
+            </View>
+          )}
+
           <View
             style={{
               flexDirection: 'row',
@@ -283,23 +379,72 @@ export default function MessagesScreen() {
                       </View>
                     )}
 
-                    {/* Timestamp */}
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        color: colors.textMuted,
-                        marginTop: 3,
-                        alignSelf: own ? 'flex-end' : 'flex-start',
-                      }}
-                    >
-                      {format(new Date(msg.created_at), 'h:mm a')}
-                    </Text>
+                    {/* Timestamp + delivery receipt */}
+                    <View style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                      marginTop: 3,
+                      alignSelf: own ? 'flex-end' : 'flex-start',
+                    }}>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: colors.textMuted,
+                        }}
+                      >
+                        {format(new Date(msg.created_at), 'h:mm a')}
+                      </Text>
+                      {own && (
+                        msg.read_by?.length > 0
+                          ? <CheckCheck size={13} color={colors.primary} />
+                          : <Check size={13} color={colors.textMuted} />
+                      )}
+                    </View>
                   </View>
                 </View>
               );
             })
           )}
         </ScrollView>
+
+        {/* Typing indicator */}
+        {typingUsers.length > 0 && (
+          <View style={{
+            paddingHorizontal: 20,
+            paddingVertical: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            backgroundColor: colors.background,
+          }}>
+            <View style={{ flexDirection: 'row', gap: 3, alignItems: 'center' }}>
+              {[0, 1, 2].map((i) => (
+                <Animated.View
+                  key={i}
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: colors.primary,
+                    opacity: pulseAnim,
+                    transform: [{
+                      translateY: pulseAnim.interpolate({
+                        inputRange: [0.4, 1],
+                        outputRange: [0, i === 1 ? -4 : -2],
+                      }),
+                    }],
+                  }}
+                />
+              ))}
+            </View>
+            <Text style={{ fontSize: 12, color: colors.textMuted, fontStyle: 'italic' }}>
+              {typingUsers.length === 1
+                ? `${typingUsers[0]} is typing...`
+                : `${typingUsers.slice(0, 2).join(', ')} ${typingUsers.length > 2 ? `+${typingUsers.length - 2}` : ''} typing...`}
+            </Text>
+          </View>
+        )}
 
         {/* Glass Input Bar */}
         <View
@@ -330,7 +475,7 @@ export default function MessagesScreen() {
               placeholder="Type a message..."
               placeholderTextColor={colors.textMuted}
               value={content}
-              onChangeText={setContent}
+              onChangeText={handleTextChange}
               multiline
               style={{
                 paddingHorizontal: 18,

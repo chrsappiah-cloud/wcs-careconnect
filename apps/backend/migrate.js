@@ -60,6 +60,16 @@ const schema = `
     source TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+
+  -- Push notification tokens (APNs)
+  CREATE TABLE IF NOT EXISTS push_tokens (
+    id SERIAL PRIMARY KEY,
+    token TEXT UNIQUE NOT NULL,
+    platform TEXT NOT NULL DEFAULT 'ios',
+    user_name TEXT,
+    user_role TEXT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
 `;
 
 async function migrate() {

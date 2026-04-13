@@ -142,3 +142,40 @@ jest.mock('expo-blur', () => {
     ),
   };
 });
+
+// Mock expo-notifications
+jest.mock('expo-notifications', () => ({
+  getPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  getExpoPushTokenAsync: jest.fn().mockResolvedValue({ data: 'ExponentPushToken[mock]' }),
+  getDevicePushTokenAsync: jest.fn().mockResolvedValue({ data: 'mock-device-token', type: 'ios' }),
+  setNotificationHandler: jest.fn(),
+  setNotificationCategoryAsync: jest.fn().mockResolvedValue(undefined),
+  scheduleNotificationAsync: jest.fn().mockResolvedValue('mock-notification-id'),
+  getBadgeCountAsync: jest.fn().mockResolvedValue(0),
+  setBadgeCountAsync: jest.fn().mockResolvedValue(undefined),
+  addNotificationReceivedListener: jest.fn().mockReturnValue({ remove: jest.fn() }),
+  addNotificationResponseReceivedListener: jest.fn().mockReturnValue({ remove: jest.fn() }),
+  AndroidImportance: { MAX: 5 },
+}));
+
+// Mock useRealtimeMessages hook
+jest.mock('./src/hooks/useRealtimeMessages', () => ({
+  useRealtimeMessages: () => ({
+    connected: true,
+    onlineUsers: [],
+    typingUsers: [],
+    sendTyping: jest.fn(),
+    sendReadReceipt: jest.fn(),
+  }),
+}));
+
+// Mock pushNotifications service
+jest.mock('./src/services/pushNotifications', () => ({
+  registerForPushNotifications: jest.fn().mockResolvedValue('ExponentPushToken[mock]'),
+  unregisterPushNotifications: jest.fn().mockResolvedValue(undefined),
+  scheduleLocalNotification: jest.fn().mockResolvedValue('mock-notification-id'),
+  getBadgeCount: jest.fn().mockResolvedValue(0),
+  setBadgeCount: jest.fn().mockResolvedValue(undefined),
+  addNotificationListeners: jest.fn().mockReturnValue(jest.fn()),
+}));

@@ -9,6 +9,10 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { startSyncManager, stopSyncManager } from '../services/syncManager';
+import {
+  registerForPushNotifications,
+  addNotificationListeners,
+} from '../services/pushNotifications';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,7 +39,28 @@ export default function RootLayout() {
   useEffect(() => {
     initiate();
     startSyncManager();
-    return () => stopSyncManager();
+
+    // Register for push notifications on app start
+    registerForPushNotifications('Nurse Sarah', 'Nurse').catch(() => {});
+
+    // Listen for incoming notifications & user interactions
+    const cleanup = addNotificationListeners({
+      onReceive: (notification) => {
+        // Notification received while app is in foreground — handled by handler
+      },
+      onInteraction: (response) => {
+        // User tapped notification or used an action (reply, acknowledge, etc.)
+        const data = response?.notification?.request?.content?.data;
+        if (data?.screen === 'messages') {
+          // Navigation handled by expo-router deep linking
+        }
+      },
+    });
+
+    return () => {
+      stopSyncManager();
+      cleanup();
+    };
   }, [initiate]);
 
   useEffect(() => {
