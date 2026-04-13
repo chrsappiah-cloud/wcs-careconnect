@@ -14,7 +14,20 @@ const schema = `
     photo_url TEXT,
     age INTEGER,
     conditions JSONB DEFAULT '[]'::jsonb,
-    latest_glucose JSONB
+    latest_glucose JSONB,
+    -- Health & demographic data
+    date_of_birth DATE,
+    gender TEXT,
+    medicare_number TEXT,
+    emergency_contact JSONB,
+    gp_name TEXT,
+    gp_phone TEXT,
+    allergies JSONB DEFAULT '[]'::jsonb,
+    medications JSONB DEFAULT '[]'::jsonb,
+    medical_history JSONB DEFAULT '[]'::jsonb,
+    care_level TEXT DEFAULT 'standard',
+    admission_date TIMESTAMPTZ DEFAULT NOW(),
+    notes TEXT
   );
 
   -- Alerts
@@ -26,7 +39,15 @@ const schema = `
     message TEXT NOT NULL,
     type TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'open',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    -- AU Health Centre integration fields
+    snomed_code TEXT,
+    snomed_display TEXT,
+    escalation_level TEXT,
+    escalated_at TIMESTAMPTZ,
+    escalated_to TEXT,
+    au_clinical_notes TEXT,
+    acknowledged_by TEXT
   );
 
   -- Tasks

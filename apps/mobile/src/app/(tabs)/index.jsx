@@ -20,6 +20,8 @@ import {
   X,
   Heart,
   TrendingUp,
+  Plus,
+  BarChart3,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -495,6 +497,41 @@ export default function ResidentsScreen() {
           })
         )}
       </ScrollView>
+
+      {/* Floating Add Resident Button */}
+      <AnimatedPressable
+        onPress={() => router.navigate('/(tabs)/add-resident')}
+        hapticType="medium"
+        style={{
+          position: 'absolute',
+          bottom: Platform.OS === 'ios' ? 110 : 88,
+          right: 20,
+          width: 58,
+          height: 58,
+          borderRadius: 29,
+          overflow: 'hidden',
+          ...shadows.lg,
+          shadowColor: '#059669',
+          shadowOpacity: 0.35,
+          shadowRadius: 12,
+          elevation: 8,
+        }}
+      >
+        <LinearGradient
+          colors={['#059669', '#10B981']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            width: 58,
+            height: 58,
+            borderRadius: 29,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Plus size={26} color="#fff" strokeWidth={2.5} />
+        </LinearGradient>
+      </AnimatedPressable>
     </View>
   );
 }

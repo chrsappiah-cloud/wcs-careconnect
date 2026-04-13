@@ -216,7 +216,25 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="help"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="resident/[id]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="add-resident"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="resident/health"
         options={{
           href: null,
         }}

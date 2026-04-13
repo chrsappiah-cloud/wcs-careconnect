@@ -38,6 +38,7 @@ import Avatar from '../../components/Avatar';
 import Card from '../../components/Card';
 import AnimatedPressable from '../../components/AnimatedPressable';
 import { haptic } from '../../utils/haptics';
+import { useRouter } from 'expo-router';
 import { useBackupManager } from '../../hooks/useBackupManager';
 import { restoreToServer, clearBackup } from '../../services/iCloudBackup';
 import { isOnline } from '../../services/syncManager';
@@ -52,6 +53,7 @@ const TIMEOUT_OPTIONS = ['5 mins', '10 mins', '15 mins', '20 mins', '30 mins'];
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { signOut, auth } = useAuth();
+  const router = useRouter();
   const [pushAlerts, setPushAlerts] = useState(true);
   const [highPriorityOnly, setHighPriorityOnly] = useState(false);
   const [biometricUnlock, setBiometricUnlock] = useState(true);
@@ -339,12 +341,12 @@ export default function SettingsScreen() {
           <SettingsItem
             icon={<HelpCircle size={20} color={colors.textSecondary} />}
             label="Help Center"
-            onPress={() => Linking.openURL('https://careconnect.help')}
+            onPress={() => router.push('/help')}
           />
           <SettingsItem
             icon={<Headphones size={20} color={colors.textSecondary} />}
             label="Device Support"
-            onPress={() => Linking.openURL('mailto:support@careconnect.com')}
+            onPress={() => Linking.openURL('mailto:christopher.appiahthompson@myworldclass.org')}
             last
           />
         </SettingsGroup>
@@ -355,10 +357,20 @@ export default function SettingsScreen() {
             fontSize: 12,
             color: colors.textMuted,
             textAlign: 'center',
-            marginBottom: 16,
+            marginBottom: 4,
           }}
         >
           CareConnect v1.0.0
+        </Text>
+        <Text
+          style={{
+            fontSize: 11,
+            color: colors.textMuted,
+            textAlign: 'center',
+            marginBottom: 16,
+          }}
+        >
+          © {new Date().getFullYear()} World Class Scholars. All rights reserved.
         </Text>
 
         {/* Sign Out */}

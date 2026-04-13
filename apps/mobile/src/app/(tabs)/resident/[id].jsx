@@ -29,6 +29,7 @@ import {
   MessageSquare,
   Pill,
   ChevronRight,
+  BarChart3,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -381,6 +382,22 @@ export default function ResidentDetailScreen() {
 
         {/* Quick Navigation Actions */}
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+          <AnimatedPressable
+            onPress={() => router.navigate(`/(tabs)/resident/health?id=${id}`)}
+            hapticType="light"
+            style={{ flex: 1 }}
+          >
+            <Card style={{ padding: 14, alignItems: 'center', flexDirection: 'row', gap: 10 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' }}>
+                <BarChart3 size={18} color="#059669" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>Health</Text>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>AU analysis</Text>
+              </View>
+              <ChevronRight size={14} color={colors.textMuted} />
+            </Card>
+          </AnimatedPressable>
           <AnimatedPressable
             onPress={() => router.navigate('/(tabs)/alerts')}
             hapticType="light"

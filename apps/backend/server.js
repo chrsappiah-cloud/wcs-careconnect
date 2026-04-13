@@ -96,6 +96,139 @@ app.get('/api/residents/:id', async (req, res) => {
   }
 });
 
+/** POST /api/residents — Create a new resident */
+app.post('/api/residents', async (req, res) => {
+  try {
+    const {
+      name, room, status, photo_url, age, conditions, latest_glucose,
+      date_of_birth, gender, medicare_number, emergency_contact,
+      gp_name, gp_phone, allergies, medications, medical_history,
+      care_level, admission_date, notes,
+    } = req.body;
+    if (!name || !room) return res.status(400).json({ error: 'Name and room are required' });
+
+    const { rows } = await db.query(
+      `INSERT INTO residents (
+        name, room, status, photo_url, age, conditions, latest_glucose,
+        date_of_birth, gender, medicare_number, emergency_contact,
+        gp_name, gp_phone, allergies, medications, medical_history,
+        care_level, admission_date, notes
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+        RETURNING *`,
+      [
+        name, room, status || 'stable', photo_url || null, age || null,
+        JSON.stringify(conditions || []), latest_glucose ? JSON.stringify(latest_glucose) : null,
+        date_of_birth || null, gender || null, medicare_number || null,
+        emergency_contact ? JSON.stringify(emergency_contact) : null,
+        gp_name || null, gp_phone || null,
+        JSON.stringify(allergies || []), JSON.stringify(medications || []),
+        JSON.stringify(medical_history || []),
+        care_level || 'standard', admission_date || new Date().toISOString(), notes || null,
+      ]
+    );
+
+    // Broadcast new resident via WebSocket
+    broadcast({ type: 'resident_added', resident: rows[0] });
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** PATCH /api/residents/:id — Update a resident */
+app.patch('/api/residents/:id', async (req, res) => {
+  try {
+    const fields = [];
+    const values = [];
+    let i = 1;
+    for (const [key, val] of Object.entries(req.body)) {
+      fields.push(`${key} = $${i++}`);
+      values.push(typeof val === 'object' && val !== null ? JSON.stringify(val) : val);
+    }
+    if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
+    values.push(req.params.id);
+    const { rows } = await db.query(
+      `UPDATE residents SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,
+      values
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Not found' });
+    broadcast({ type: 'resident_updated', resident: rows[0] });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** DELETE /api/residents/:id — Remove a resident */
+app.delete('/api/residents/:id', async (req, res) => {
+  try {
+    const { rows } = await db.query('DELETE FROM residents WHERE id = $1 RETURNING id, name', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Not found' });
+    broadcast({ type: 'resident_removed', residentId: rows[0].id });
+    res.json({ deleted: true, ...rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** GET /api/residents/:id/health-summary — Health analysis for a resident */
+app.get('/api/residents/:id/health-summary', async (req, res) => {
+  try {
+    const { rows: rRows } = await db.query('SELECT * FROM residents WHERE id = $1', [req.params.id]);
+    if (!rRows.length) return res.status(404).json({ error: 'Not found' });
+    const resident = rRows[0];
+
+    // Latest readings for each metric
+    const { rows: readings } = await db.query(
+      `SELECT DISTINCT ON (metric) metric, value, unit, source, created_at
+       FROM readings WHERE resident_id = $1
+       ORDER BY metric, created_at DESC`, [req.params.id]
+    );
+
+    // Recent alerts
+    const { rows: alerts } = await db.query(
+      `SELECT * FROM alerts WHERE resident_id = $1 ORDER BY created_at DESC LIMIT 10`, [req.params.id]
+    );
+
+    // Pending tasks
+    const { rows: tasks } = await db.query(
+      `SELECT * FROM tasks WHERE resident_id = $1 AND status = 'pending' ORDER BY id`, [req.params.id]
+    );
+
+    // Health risk analysis
+    const risks = [];
+    for (const r of readings) {
+      const th = AU_CLINICAL_THRESHOLDS[r.metric];
+      if (!th) continue;
+      if (r.value >= (th.critical_high || Infinity)) {
+        risks.push({ metric: r.metric, level: 'critical', direction: 'high', value: r.value, threshold: th.critical_high, guideline: th.guideline, snomed: th.snomedCode });
+      } else if (r.value >= (th.warning_high || Infinity)) {
+        risks.push({ metric: r.metric, level: 'warning', direction: 'high', value: r.value, threshold: th.warning_high, guideline: th.guideline, snomed: th.snomedCode });
+      } else if (r.value <= (th.critical_low || -Infinity)) {
+        risks.push({ metric: r.metric, level: 'critical', direction: 'low', value: r.value, threshold: th.critical_low, guideline: th.guideline, snomed: th.snomedCode });
+      } else if (r.value <= (th.warning_low || -Infinity)) {
+        risks.push({ metric: r.metric, level: 'warning', direction: 'low', value: r.value, threshold: th.warning_low, guideline: th.guideline, snomed: th.snomedCode });
+      }
+    }
+
+    const overallRisk = risks.some(r => r.level === 'critical') ? 'critical'
+      : risks.some(r => r.level === 'warning') ? 'warning' : 'stable';
+
+    res.json({
+      resident: { id: resident.id, name: resident.name, room: resident.room, status: resident.status, age: resident.age, care_level: resident.care_level },
+      vitals: readings.reduce((acc, r) => { acc[r.metric] = r; return acc; }, {}),
+      alerts: { total: alerts.length, critical: alerts.filter(a => a.severity === 'critical').length, recent: alerts.slice(0, 5) },
+      tasks: { pending: tasks.length, items: tasks.slice(0, 5) },
+      riskAnalysis: { overallRisk, risks, assessedAt: new Date().toISOString() },
+      conditions: resident.conditions || [],
+      medications: resident.medications || [],
+      allergies: resident.allergies || [],
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ──────────────────────────────────────────────
 // ALERTS
 // ──────────────────────────────────────────────
@@ -132,6 +265,179 @@ app.patch('/api/alerts/:id', async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Not found' });
     res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ──────────────────────────────────────────────
+// AU HEALTH CENTRE — Escalation & Clinical Context
+// ──────────────────────────────────────────────
+
+// Australian clinical thresholds (ACSQHC + Between the Flags)
+const AU_CLINICAL_THRESHOLDS = {
+  glucose: {
+    snomedCode: '33747003', display: 'Blood glucose level',
+    critical_high: 250, warning_high: 180, normal_min: 70, warning_low: 69, critical_low: 53,
+    guideline: 'RACGP — Diabetes Management in Aged Care',
+  },
+  spo2: {
+    snomedCode: '431314004', display: 'Peripheral oxygen saturation',
+    critical_low: 89, warning_low: 93, normal_min: 94,
+    guideline: 'Between the Flags — NSW Clinical Excellence Commission',
+  },
+  heart_rate: {
+    snomedCode: '364075005', display: 'Heart rate',
+    critical_high: 130, warning_high: 100, normal_min: 60, warning_low: 59, critical_low: 49,
+    guideline: 'Between the Flags — NSW Clinical Excellence Commission',
+  },
+  blood_pressure: {
+    snomedCode: '271649006', display: 'Systolic blood pressure',
+    critical_high: 180, warning_high: 140, normal_min: 100, warning_low: 99, critical_low: 89,
+    guideline: 'Heart Foundation Australia — Hypertension Guidelines',
+  },
+  temperature: {
+    snomedCode: '386725007', display: 'Body temperature',
+    critical_high: 39.5, warning_high: 38.0, normal_min: 36.0, warning_low: 35.9, critical_low: 34.9,
+    guideline: 'ACSQHC — Recognising & Responding to Clinical Deterioration',
+  },
+};
+
+const SNOMED_ALERT_MAP = {
+  glucose:  { high: { code: '80394007', display: 'Hyperglycaemia' }, low: { code: '302866003', display: 'Hypoglycaemia' } },
+  spo2:     { low: { code: '389087006', display: 'Hypoxaemia' } },
+  heart_rate: { high: { code: '3424008', display: 'Tachycardia' }, low: { code: '48867003', display: 'Bradycardia' } },
+  blood_pressure: { high: { code: '38341003', display: 'Hypertensive disorder' }, low: { code: '45007003', display: 'Hypotension' } },
+  temperature: { high: { code: '386661006', display: 'Fever' }, low: { code: '386689009', display: 'Hypothermia' } },
+  medication: { missed: { code: '182834008', display: 'Drug treatment not indicated' }, interaction: { code: '419511003', display: 'Drug interaction' } },
+};
+
+const AU_ESCALATION = {
+  emergency: {
+    level: 1, label: 'Emergency — Triple Zero (000)',
+    action: 'Call 000 for ambulance. Begin first aid as appropriate.',
+    contacts: [{ name: 'Triple Zero', phone: '000', type: 'emergency' }],
+    nsqhs: 'NSQHS Standard 8 — Escalation Tier 3 (MET/Code Blue)',
+  },
+  urgent: {
+    level: 2, label: 'Urgent — Health Direct / Nurse-on-Call',
+    action: 'Contact facility GP or Nurse-on-Call. Prepare ISBAR handover.',
+    contacts: [
+      { name: 'Health Direct Australia', phone: '1800 022 222', type: 'healthline' },
+      { name: 'Nurse-on-Call (VIC)', phone: '1300 60 60 24', type: 'nursing' },
+    ],
+    nsqhs: 'NSQHS Standard 8 — Escalation Tier 2 (Rapid Response)',
+  },
+  routine: {
+    level: 3, label: 'Routine — GP Review',
+    action: 'Document in clinical notes. Include in next GP review handover.',
+    contacts: [{ name: 'My Aged Care', phone: '1800 200 422', type: 'agedcare' }],
+    nsqhs: 'NSQHS Standard 8 — Escalation Tier 1 (Clinical Review)',
+  },
+};
+
+function resolveEscalation(severity) {
+  if (severity === 'critical') return AU_ESCALATION.emergency;
+  if (severity === 'warning') return AU_ESCALATION.urgent;
+  return AU_ESCALATION.routine;
+}
+
+function resolveSNOMED(type, message) {
+  const codes = SNOMED_ALERT_MAP[type];
+  if (!codes) return null;
+  const msg = (message || '').toLowerCase();
+  if (msg.includes('high') || msg.includes('elevated') || msg.includes('above')) return codes.high;
+  if (msg.includes('low') || msg.includes('below') || msg.includes('drop')) return codes.low;
+  return codes.high || codes.low || codes.missed || null;
+}
+
+/** GET /api/alerts/:id/clinical-context — AU clinical context for an alert */
+app.get('/api/alerts/:id/clinical-context', async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT * FROM alerts WHERE id = $1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Alert not found' });
+    const alert = rows[0];
+    const snomed = resolveSNOMED(alert.type, alert.message);
+    const escalation = resolveEscalation(alert.severity);
+    const threshold = AU_CLINICAL_THRESHOLDS[alert.type] || null;
+
+    res.json({
+      alert_id: alert.id,
+      snomed: snomed ? { system: 'http://snomed.info/sct', ...snomed } : null,
+      escalation,
+      threshold: threshold ? { snomedCode: threshold.snomedCode, display: threshold.display, guideline: threshold.guideline } : null,
+      fhirFlag: {
+        resourceType: 'Flag',
+        meta: { profile: ['http://hl7.org.au/fhir/core/StructureDefinition/au-core-flag'] },
+        status: alert.status === 'acknowledged' ? 'inactive' : 'active',
+        code: { coding: snomed ? [{ system: 'http://snomed.info/sct', code: snomed.code, display: snomed.display }] : [], text: alert.message },
+        subject: { reference: `Patient/${alert.resident_id}`, display: alert.resident_name },
+        period: { start: alert.created_at },
+      },
+      isbar: {
+        identify: { facility: 'CareConnect Aged Care', patient: alert.resident_name },
+        situation: { description: alert.message, severity: alert.severity, snomed: snomed?.display },
+        background: { residentId: alert.resident_id, createdAt: alert.created_at },
+        assessment: { level: escalation.label, nsqhs: escalation.nsqhs },
+        recommendation: { action: escalation.action, contacts: escalation.contacts },
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** POST /api/alerts/:id/escalate — Escalate alert to AU health centre */
+app.post('/api/alerts/:id/escalate', async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT * FROM alerts WHERE id = $1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Alert not found' });
+    const alert = rows[0];
+
+    const snomed = resolveSNOMED(alert.type, alert.message);
+    const escalation = resolveEscalation(alert.severity);
+    const escalatedTo = escalation.contacts[0]?.name || 'Health Direct Australia';
+
+    // Update alert with escalation data
+    const { rows: updated } = await db.query(
+      `UPDATE alerts SET
+        escalation_level = $1,
+        escalated_at = NOW(),
+        escalated_to = $2,
+        snomed_code = $3,
+        snomed_display = $4,
+        au_clinical_notes = $5,
+        status = 'escalated'
+       WHERE id = $6 RETURNING *`,
+      [
+        escalation.label,
+        escalatedTo,
+        snomed?.code || null,
+        snomed?.display || null,
+        `Escalated via NSQHS Standard 8 protocol. ${escalation.nsqhs}`,
+        req.params.id,
+      ]
+    );
+
+    // Broadcast escalation event via WebSocket
+    broadcast({
+      type: 'alert_escalated',
+      alert: updated[0],
+      escalation,
+    });
+
+    res.json({
+      escalated: true,
+      alert: updated[0],
+      escalation,
+      isbar: {
+        identify: { facility: 'CareConnect Aged Care', patient: alert.resident_name },
+        situation: { description: alert.message, severity: alert.severity, snomed: snomed?.display },
+        background: { residentId: alert.resident_id, createdAt: alert.created_at },
+        assessment: { level: escalation.label, nsqhs: escalation.nsqhs },
+        recommendation: { action: escalation.action, contacts: escalation.contacts },
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -366,6 +672,10 @@ server.listen(PORT, () => {
   console.log(`  📋 Endpoints:`);
   console.log(`     GET    /api/residents`);
   console.log(`     GET    /api/residents/:id`);
+  console.log(`     POST   /api/residents`);
+  console.log(`     PATCH  /api/residents/:id`);
+  console.log(`     DELETE /api/residents/:id`);
+  console.log(`     GET    /api/residents/:id/health-summary`);
   console.log(`     GET    /api/alerts?status=open`);
   console.log(`     PATCH  /api/alerts/:id`);
   console.log(`     GET    /api/tasks?status=all`);
