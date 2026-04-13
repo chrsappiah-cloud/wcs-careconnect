@@ -80,6 +80,7 @@ export default function ResidentsScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('all');
 
   const {
     data: residents = mockResidents,
@@ -96,11 +97,13 @@ export default function ResidentsScreen() {
     placeholderData: mockResidents,
   });
 
-  const filteredResidents = residents.filter(
-    (r) =>
+  const filteredResidents = residents.filter((r) => {
+    const matchesSearch =
       r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.room.toLowerCase().includes(search.toLowerCase()),
-  );
+      r.room.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = activeFilter === 'all' || r.status === activeFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const statusCounts = residents.reduce((acc, r) => {
     acc[r.status] = (acc[r.status] || 0) + 1;
@@ -157,46 +160,77 @@ export default function ResidentsScreen() {
           </View>
         </View>
 
-        {/* Status summary pills with animated counts */}
+        {/* Status filter tabs with animated counts */}
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 18 }}>
-          {[
-            { key: 'stable', label: 'Stable', color: '#4ADE80', icon: Heart },
-            { key: 'warning', label: 'Warning', color: '#FCD34D', icon: Activity },
-            { key: 'critical', label: 'Critical', color: '#FCA5A5', icon: TrendingUp },
-          ].map((s) => (
+          <AnimatedPressable
+            onPress={() => setActiveFilter('all')}
+            hapticType="selection"
+          >
             <View
-              key={s.key}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: 'rgba(255,255,255,0.12)',
+                backgroundColor: activeFilter === 'all' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.12)',
                 paddingHorizontal: 12,
                 paddingVertical: 7,
                 borderRadius: radius.full,
                 gap: 6,
                 borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.06)',
+                borderColor: activeFilter === 'all' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.06)',
               }}
             >
-              {s.key === 'critical' && (statusCounts[s.key] || 0) > 0 ? (
-                <PulseIndicator color={s.color} size={7} />
-              ) : (
-                <View
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: s.color,
-                  }}
-                />
-              )}
+              <Users size={13} color="rgba(255,255,255,0.9)" />
               <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textInverse }}>
-                {statusCounts[s.key] || 0}
+                {residents.length}
               </Text>
               <Text style={{ fontSize: 12, fontWeight: '500', color: 'rgba(255,255,255,0.75)' }}>
-                {s.label}
+                All
               </Text>
             </View>
+          </AnimatedPressable>
+          {[
+            { key: 'stable', label: 'Stable', color: '#4ADE80', icon: Heart },
+            { key: 'warning', label: 'Warning', color: '#FCD34D', icon: Activity },
+            { key: 'critical', label: 'Critical', color: '#FCA5A5', icon: TrendingUp },
+          ].map((s) => (
+            <AnimatedPressable
+              key={s.key}
+              onPress={() => setActiveFilter(activeFilter === s.key ? 'all' : s.key)}
+              hapticType="selection"
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: activeFilter === s.key ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.12)',
+                  paddingHorizontal: 12,
+                  paddingVertical: 7,
+                  borderRadius: radius.full,
+                  gap: 6,
+                  borderWidth: 1,
+                  borderColor: activeFilter === s.key ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.06)',
+                }}
+              >
+                {s.key === 'critical' && (statusCounts[s.key] || 0) > 0 ? (
+                  <PulseIndicator color={s.color} size={7} />
+                ) : (
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: s.color,
+                    }}
+                  />
+                )}
+                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textInverse }}>
+                  {statusCounts[s.key] || 0}
+                </Text>
+                <Text style={{ fontSize: 12, fontWeight: '500', color: 'rgba(255,255,255,0.75)' }}>
+                  {s.label}
+                </Text>
+              </View>
+            </AnimatedPressable>
           ))}
         </View>
 

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import {
   AlertTriangle,
   CheckCircle,
@@ -17,6 +18,8 @@ import {
   ShieldAlert,
   Zap,
   Shield,
+  User,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -99,6 +102,8 @@ function AnimatedAlertCard({ children, index }) {
 export default function AlertsScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const [severityFilter, setSeverityFilter] = useState('all');
 
   const {
     data: alerts = mockAlerts,
@@ -118,11 +123,10 @@ export default function AlertsScreen() {
 
   const ackMutation = useMutation({
     mutationFn: async (id) => {
-      const response = await fetch(apiUrl('/api/alerts'), {
+      const response = await fetch(apiUrl(`/api/alerts/${id}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id,
           status: 'acknowledged',
           acknowledged_by: 'Nurse Sarah',
         }),
@@ -223,6 +227,39 @@ export default function AlertsScreen() {
             </View>
           )}
         </View>
+
+        {/* Severity filter tabs */}
+        {alerts.length > 0 && (
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'critical', label: 'Critical' },
+              { key: 'warning', label: 'Warning' },
+              { key: 'info', label: 'Info' },
+            ].map((f) => (
+              <AnimatedPressable
+                key={f.key}
+                onPress={() => setSeverityFilter(f.key)}
+                hapticType="selection"
+              >
+                <View
+                  style={{
+                    backgroundColor: severityFilter === f.key ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.12)',
+                    paddingHorizontal: 14,
+                    paddingVertical: 7,
+                    borderRadius: radius.full,
+                    borderWidth: 1,
+                    borderColor: severityFilter === f.key ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textInverse }}>
+                    {f.label}
+                  </Text>
+                </View>
+              </AnimatedPressable>
+            ))}
+          </View>
+        )}
       </LinearGradient>
 
       <ScrollView
@@ -268,6 +305,7 @@ export default function AlertsScreen() {
           </View>
         ) : (
           alerts
+            .filter((a) => severityFilter === 'all' || a.severity === severityFilter)
             .sort((a, b) => {
               const order = { critical: 0, warning: 1, info: 2 };
               return (order[a.severity] ?? 3) - (order[b.severity] ?? 3);
@@ -355,18 +393,26 @@ export default function AlertsScreen() {
                         </View>
                       </View>
 
-                      {/* Resident info */}
-                      <Text
-                        style={{
-                          fontSize: 17,
-                          fontWeight: '600',
-                          color: colors.text,
-                          marginBottom: 2,
-                          letterSpacing: -0.4,
-                        }}
+                      {/* Resident info — tappable to navigate */}
+                      <AnimatedPressable
+                        onPress={() => router.navigate(`/(tabs)/resident/${alert.resident_id}`)}
+                        hapticType="light"
                       >
-                        {alert.resident_name}
-                      </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Text
+                            style={{
+                              fontSize: 17,
+                              fontWeight: '600',
+                              color: colors.primary,
+                              marginBottom: 2,
+                              letterSpacing: -0.4,
+                            }}
+                          >
+                            {alert.resident_name}
+                          </Text>
+                          <ChevronRight size={15} color={colors.primary} />
+                        </View>
+                      </AnimatedPressable>
 
                       {/* Alert message */}
                       <Text

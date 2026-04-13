@@ -15,11 +15,14 @@ import {
   ClipboardList,
   AlertCircle,
   Sparkles,
+  User,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { formatDistanceToNow } from 'date-fns';
 import { colors, radius, shadows, typography, gradients, animation } from '../../theme';
-import { mockTasks } from '../../mockData';
+import { mockTasks, mockResidents } from '../../mockData';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
 import AnimatedPressable from '../../components/AnimatedPressable';
@@ -71,6 +74,7 @@ function AnimatedTaskCard({ children, index, style }) {
 export default function TasksScreen() {
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const {
     data: tasks = mockTasks,
@@ -88,13 +92,27 @@ export default function TasksScreen() {
     placeholderData: mockTasks,
   });
 
+  const { data: residents = mockResidents } = useQuery({
+    queryKey: ['residents'],
+    queryFn: async () => {
+      const response = await fetch(apiUrl('/api/residents'));
+      if (!response.ok) throw new Error('Failed to fetch residents');
+      return response.json();
+    },
+    placeholderData: mockResidents,
+  });
+
+  const residentMap = residents.reduce((map, r) => {
+    map[r.id] = r;
+    return map;
+  }, {});
+
   const toggleTaskMutation = useMutation({
     mutationFn: async ({ id, status }) => {
-      const response = await fetch(apiUrl('/api/tasks'), {
+      const response = await fetch(apiUrl(`/api/tasks/${id}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id,
           status: status === 'completed' ? 'pending' : 'completed',
         }),
       });
@@ -223,6 +241,8 @@ export default function TasksScreen() {
                     <TaskItem
                       task={task}
                       onToggle={() => toggleTaskMutation.mutate(task)}
+                      resident={residentMap[task.resident_id]}
+                      onResidentPress={(residentId) => router.navigate(`/(tabs)/resident/${residentId}`)}
                     />
                   </AnimatedTaskCard>
                 ))}
@@ -264,6 +284,8 @@ export default function TasksScreen() {
                     <TaskItem
                       task={task}
                       onToggle={() => toggleTaskMutation.mutate(task)}
+                      resident={residentMap[task.resident_id]}
+                      onResidentPress={(residentId) => router.navigate(`/(tabs)/resident/${residentId}`)}
                     />
                   </AnimatedTaskCard>
                 ))}
@@ -276,7 +298,7 @@ export default function TasksScreen() {
   );
 }
 
-function TaskItem({ task, onToggle }) {
+function TaskItem({ task, onToggle, resident, onResidentPress }) {
   const isCompleted = task.status === 'completed';
   const priority = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
 
@@ -360,9 +382,44 @@ function TaskItem({ task, onToggle }) {
                 alignItems: 'center',
                 marginTop: 8,
                 gap: 10,
+                flexWrap: 'wrap',
               }}
             >
-              {!isCompleted && task.priority && (
+              {/* Resident link */}
+              {resident && !isCompleted && (
+                <AnimatedPressable
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    onResidentPress?.(task.resident_id);
+                  }}
+                  hapticType="light"
+                >
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: colors.primaryLight,
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
+                      borderRadius: radius.full,
+                      gap: 4,
+                    }}
+                  >
+                    <User size={11} color={colors.primary} />
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: '600',
+                        color: colors.primary,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {resident.name}
+                    </Text>
+                    <ChevronRight size={10} color={colors.primary} />
+                  </View>
+                </AnimatedPressable>
+              )}
                 <View
                   style={{
                     flexDirection: 'row',

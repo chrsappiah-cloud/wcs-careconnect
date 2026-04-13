@@ -24,6 +24,11 @@ import {
   MapPin,
   Calendar,
   FileText,
+  Bell,
+  ClipboardList,
+  MessageSquare,
+  Pill,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -152,10 +157,10 @@ export default function ResidentDetailScreen() {
   const toggleTaskMutation = useMutation({
     mutationFn: async (task) => {
       const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-      const response = await fetch(apiUrl('/api/tasks'), {
+      const response = await fetch(apiUrl(`/api/tasks/${task.id}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: task.id, status: newStatus }),
+        body: JSON.stringify({ status: newStatus }),
       });
       if (!response.ok)
         throw new Error(`Task toggle failed: ${response.status}`);
@@ -373,6 +378,76 @@ export default function ResidentDetailScreen() {
             </View>
           )}
         </Card>
+
+        {/* Quick Navigation Actions */}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+          <AnimatedPressable
+            onPress={() => router.navigate('/(tabs)/alerts')}
+            hapticType="light"
+            style={{ flex: 1 }}
+          >
+            <Card style={{ padding: 14, alignItems: 'center', flexDirection: 'row', gap: 10 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.dangerLight, alignItems: 'center', justifyContent: 'center' }}>
+                <Bell size={18} color={colors.danger} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>Alerts</Text>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>View all alerts</Text>
+              </View>
+              <ChevronRight size={14} color={colors.textMuted} />
+            </Card>
+          </AnimatedPressable>
+          <AnimatedPressable
+            onPress={() => router.navigate('/(tabs)/tasks')}
+            hapticType="light"
+            style={{ flex: 1 }}
+          >
+            <Card style={{ padding: 14, alignItems: 'center', flexDirection: 'row', gap: 10 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
+                <ClipboardList size={18} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>Tasks</Text>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>View all tasks</Text>
+              </View>
+              <ChevronRight size={14} color={colors.textMuted} />
+            </Card>
+          </AnimatedPressable>
+        </View>
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+          <AnimatedPressable
+            onPress={() => router.navigate('/(tabs)/messages')}
+            hapticType="light"
+            style={{ flex: 1 }}
+          >
+            <Card style={{ padding: 14, alignItems: 'center', flexDirection: 'row', gap: 10 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center' }}>
+                <MessageSquare size={18} color="#7C3AED" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>Messages</Text>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>Team chat</Text>
+              </View>
+              <ChevronRight size={14} color={colors.textMuted} />
+            </Card>
+          </AnimatedPressable>
+          <AnimatedPressable
+            onPress={() => router.navigate('/(tabs)/medications')}
+            hapticType="light"
+            style={{ flex: 1 }}
+          >
+            <Card style={{ padding: 14, alignItems: 'center', flexDirection: 'row', gap: 10 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center' }}>
+                <Pill size={18} color="#065F46" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>Meds</Text>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>Medications</Text>
+              </View>
+              <ChevronRight size={14} color={colors.textMuted} />
+            </Card>
+          </AnimatedPressable>
+        </View>
 
         {/* Vitals */}
         <SectionHeader title="Latest Vitals" style={{ marginBottom: 12 }} />

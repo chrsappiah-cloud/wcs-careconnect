@@ -93,8 +93,8 @@ describe('Dashboard — search and filtering', () => {
   });
 
   it('displays resident count badge', () => {
-    const { getByText } = render(<DashboardScreen />, { wrapper: Wrapper });
-    expect(getByText(String(mockResidents.length))).toBeTruthy();
+    const { getAllByText } = render(<DashboardScreen />, { wrapper: Wrapper });
+    expect(getAllByText(String(mockResidents.length)).length).toBeGreaterThan(0);
   });
 
   it('shows status summary pills (Stable, Warning, Critical)', () => {
