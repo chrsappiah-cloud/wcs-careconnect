@@ -5,8 +5,13 @@
   "description": "CareConnect API server (Express + Supabase PostgreSQL)",
   "scripts": {
     "start": "node server.js",
+    "test": "jest --runInBand --ci",
     "migrate": "node migrate.js",
     "seed": "node seed.js"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.1.1"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",

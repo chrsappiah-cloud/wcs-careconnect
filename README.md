@@ -12,6 +12,15 @@ Merge policy:
 - Merge functional fixes first.
 - Merge cleanup branches only after automated tests pass and manual smoke tests pass on iOS simulator and web.
 
+## MVP Scope and Quality Gates
+
+- MVP scope: `docs/CareConnect MVP v0.1.md`
+- Mobile/web parity checklist: `docs/mobile-web-parity-checklist.md`
+- Run guide (web + iOS): `docs/how-to-run-careconnect-web-ios.md`
+- Dev environment conventions: `docs/dev-environment.md`
+
+Before starting any new feature work, complete and pass the parity checklist on simulator and web.
+
 ## Quick Start (Clone to Running App)
 
 From repo root:

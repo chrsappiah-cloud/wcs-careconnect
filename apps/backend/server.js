@@ -936,42 +936,47 @@ app.post('/api/backup/restore', async (req, res) => {
   }
 });
 
-// ──────────────────────────────────────────────
-// START
-// ──────────────────────────────────────────────
-server.listen(PORT, () => {
-  const dbLabel = process.env.NODE_ENV === 'production' ? 'AWS RDS PostgreSQL (ap-southeast-2)' : 'Supabase PostgreSQL';
-  console.log(`\n  🏥 CareConnect API Server running at http://localhost:${PORT}`);
-  console.log(`  🔌 WebSocket server running at ws://localhost:${PORT}/ws`);
-  console.log(`  🐘 Connected to ${dbLabel}`);
-  console.log(`  📋 Endpoints:`);
-  console.log(`     GET    /health`);
-  console.log(`     GET    /api/residents`);
-  console.log(`     GET    /api/residents/:id`);
-  console.log(`     POST   /api/residents`);
-  console.log(`     PATCH  /api/residents/:id`);
-  console.log(`     DELETE /api/residents/:id`);
-  console.log(`     GET    /api/residents/:id/health-summary`);
-  console.log(`     POST   /api/residents/:id/photo-upload-url`);
-  console.log(`     GET    /api/residents/:id/photo-url`);
-  console.log(`     GET    /api/alerts?status=open`);
-  console.log(`     PATCH  /api/alerts/:id`);
-  console.log(`     GET    /api/tasks?status=all`);
-  console.log(`     PATCH  /api/tasks/:id`);
-  console.log(`     POST   /api/tasks`);
-  console.log(`     GET    /api/messages`);
-  console.log(`     POST   /api/messages`);
-  console.log(`     GET    /api/contacts?type=internal|external`);
-  console.log(`     POST   /api/contacts`);
-  console.log(`     GET    /api/conversations?user=Name`);
-  console.log(`     POST   /api/conversations`);
-  console.log(`     GET    /api/conversations/:id/messages`);
-  console.log(`     POST   /api/conversations/:id/messages`);
-  console.log(`     POST   /api/push-tokens`);
-  console.log(`     DELETE /api/push-tokens/:token`);
-  console.log(`     GET    /api/readings?residentId=:id`);
-  console.log(`     POST   /api/readings`);
-  console.log(`     GET    /api/backup`);
-  console.log(`     POST   /api/backup/restore`);
-  console.log(`     WS     /ws  (real-time messaging)\n`);
-});
+function startServer() {
+  return server.listen(PORT, () => {
+    const dbLabel = process.env.NODE_ENV === 'production' ? 'AWS RDS PostgreSQL (ap-southeast-2)' : 'Supabase PostgreSQL';
+    console.log(`\n  🏥 CareConnect API Server running at http://localhost:${PORT}`);
+    console.log(`  🔌 WebSocket server running at ws://localhost:${PORT}/ws`);
+    console.log(`  🐘 Connected to ${dbLabel}`);
+    console.log(`  📋 Endpoints:`);
+    console.log(`     GET    /health`);
+    console.log(`     GET    /api/residents`);
+    console.log(`     GET    /api/residents/:id`);
+    console.log(`     POST   /api/residents`);
+    console.log(`     PATCH  /api/residents/:id`);
+    console.log(`     DELETE /api/residents/:id`);
+    console.log(`     GET    /api/residents/:id/health-summary`);
+    console.log(`     POST   /api/residents/:id/photo-upload-url`);
+    console.log(`     GET    /api/residents/:id/photo-url`);
+    console.log(`     GET    /api/alerts?status=open`);
+    console.log(`     PATCH  /api/alerts/:id`);
+    console.log(`     GET    /api/tasks?status=all`);
+    console.log(`     PATCH  /api/tasks/:id`);
+    console.log(`     POST   /api/tasks`);
+    console.log(`     GET    /api/messages`);
+    console.log(`     POST   /api/messages`);
+    console.log(`     GET    /api/contacts?type=internal|external`);
+    console.log(`     POST   /api/contacts`);
+    console.log(`     GET    /api/conversations?user=Name`);
+    console.log(`     POST   /api/conversations`);
+    console.log(`     GET    /api/conversations/:id/messages`);
+    console.log(`     POST   /api/conversations/:id/messages`);
+    console.log(`     POST   /api/push-tokens`);
+    console.log(`     DELETE /api/push-tokens/:token`);
+    console.log(`     GET    /api/readings?residentId=:id`);
+    console.log(`     POST   /api/readings`);
+    console.log(`     GET    /api/backup`);
+    console.log(`     POST   /api/backup/restore`);
+    console.log(`     WS     /ws  (real-time messaging)\n`);
+  });
+}
+
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = { app, server, startServer };

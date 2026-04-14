@@ -94,7 +94,7 @@ jobs:
             xargs grep -l "console\.error\|console\.warn\|TODO\|FIXME\|HACK" 2>/dev/null || true
 
   backend-tests:
-    name: Backend — Server Tests
+    name: Backend — API Contract + Happy Path Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -114,23 +114,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify server starts (smoke test)
-        run: |
-          timeout 10 node -e "
-            // Smoke check: server module loads without import errors
-            try {
-              // Only check syntax / imports, not actual DB connection
-              require('./db.js');
-              console.log('Backend modules load OK');
-            } catch(e) {
-              if (e.message.includes('Cannot find module') || e.message.includes('SyntaxError')) {
-                console.error('Backend load failed:', e.message);
-                process.exit(1);
-              }
-              // DB connection errors are expected in CI (no DB) — that's fine
-              console.log('Backend load OK (expected connection error in CI):', e.message);
-            }
-          " || true
+      - name: Run backend API contract + happy-path tests
+        run: npm test -- --runInBand --ci
 
   all-checks-pass:
     name: All Checks Pass
