@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Text, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated } from 'react-native';
 
 export default function AnimatedNumber({
   value = 0,
@@ -10,17 +10,11 @@ export default function AnimatedNumber({
   decimals = 0,
 }) {
   const animatedValue = useRef(new Animated.Value(0)).current;
-  const displayValue = useRef(0);
-  const textRef = useRef(null);
+  const [displayValue, setDisplayValue] = useState(value);
 
   useEffect(() => {
     const listener = animatedValue.addListener(({ value: v }) => {
-      displayValue.current = v;
-      if (textRef.current) {
-        textRef.current.setNativeProps({
-          text: `${prefix}${v.toFixed(decimals)}${suffix}`,
-        });
-      }
+      setDisplayValue(v);
     });
 
     Animated.timing(animatedValue, {
@@ -33,8 +27,8 @@ export default function AnimatedNumber({
   }, [value, duration, prefix, suffix, decimals]);
 
   return (
-    <Animated.Text ref={textRef} style={style}>
-      {`${prefix}${value.toFixed(decimals)}${suffix}`}
+    <Animated.Text style={style}>
+      {`${prefix}${displayValue.toFixed(decimals)}${suffix}`}
     </Animated.Text>
   );
 }
