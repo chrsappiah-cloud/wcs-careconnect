@@ -1,6 +1,14 @@
 import { apiUrl } from './apiClient';
+import { useAuthStore } from '../utils/auth/store';
 
-const CURRENT_USER = { name: 'Nurse Sarah', role: 'Nurse' };
+export function getCurrentUser() {
+  const auth = useAuthStore.getState().auth;
+  const user = auth?.user;
+  return {
+    name: user?.name || user?.email?.split('@')[0] || 'Care Staff',
+    role: user?.role || 'Nurse',
+  };
+}
 
 // ──────────────────────────────────────────────
 // Contacts (Stakeholder Directory)
@@ -27,7 +35,7 @@ export async function createContact(contact) {
 // Conversations
 // ──────────────────────────────────────────────
 
-export async function fetchConversations(userName = CURRENT_USER.name) {
+export async function fetchConversations(userName = getCurrentUser().name) {
   const res = await fetch(apiUrl(`/api/conversations?user=${encodeURIComponent(userName)}`));
   if (!res.ok) throw new Error(`Conversations fetch failed: ${res.status}`);
   return res.json();
@@ -40,7 +48,7 @@ export async function createConversation({ title, type, participants }) {
     body: JSON.stringify({
       title,
       type: type || 'direct',
-      created_by: CURRENT_USER.name,
+      created_by: getCurrentUser().name,
       participants,
     }),
   });
@@ -69,8 +77,8 @@ export async function sendConversationMessage(conversationId, content, messageTy
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      sender_name: CURRENT_USER.name,
-      sender_role: CURRENT_USER.role,
+      sender_name: getCurrentUser().name,
+      sender_role: getCurrentUser().role,
       content,
       message_type: messageType,
     }),
@@ -83,11 +91,7 @@ export async function sendConversationMessage(conversationId, content, messageTy
 // Helpers
 // ──────────────────────────────────────────────
 
-export function getCurrentUser() {
-  return CURRENT_USER;
-}
-
-export function getConversationDisplayName(conversation, currentUser = CURRENT_USER.name) {
+export function getConversationDisplayName(conversation, currentUser = getCurrentUser().name) {
   if (conversation.title) return conversation.title;
   if (conversation.type === 'direct' && conversation.participants) {
     const other = conversation.participants.find(p => p.name !== currentUser);
@@ -102,7 +106,7 @@ export function getConversationDisplayName(conversation, currentUser = CURRENT_U
   return 'Conversation';
 }
 
-export function getConversationAvatar(conversation, currentUser = CURRENT_USER.name) {
+export function getConversationAvatar(conversation, currentUser = getCurrentUser().name) {
   if (conversation.type === 'direct' && conversation.participants) {
     const other = conversation.participants.find(p => p.name !== currentUser);
     return other || null;

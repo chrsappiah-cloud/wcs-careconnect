@@ -17,6 +17,17 @@ jest.mock('../apiClient', () => ({
   apiUrl: (path) => `http://localhost:3001${path}`,
 }));
 
+// Mock auth store — returns a known user so getCurrentUser() is deterministic in tests
+jest.mock('../../utils/auth/store', () => ({
+  useAuthStore: {
+    getState: () => ({
+      auth: {
+        user: { name: 'Nurse Sarah', role: 'Nurse' },
+      },
+    }),
+  },
+}));
+
 // Mock global fetch
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -213,7 +224,7 @@ describe('sendConversationMessage', () => {
 // ─── Helper Functions ────────────────────────────────────
 
 describe('getCurrentUser', () => {
-  it('returns Nurse Sarah', () => {
+  it('returns the authenticated user from auth store', () => {
     const user = getCurrentUser();
     expect(user).toEqual({ name: 'Nurse Sarah', role: 'Nurse' });
   });

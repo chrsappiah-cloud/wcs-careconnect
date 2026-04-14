@@ -4,9 +4,8 @@ import { playAlertBySeverity, playEscalationSound, playNewAlertSound } from './s
 let ws = null;
 let reconnectTimer = null;
 let listeners = [];
-const WS_URL = __DEV__
-  ? 'ws://localhost:3001/ws'
-  : 'ws://localhost:3001/ws';
+const WS_URL = (process.env.EXPO_PUBLIC_CREATE_API_URL || 'http://localhost:3001')
+  .replace(/^http/, 'ws') + '/ws';
 
 export function addWSListener(fn) {
   listeners.push(fn);
