@@ -41,17 +41,14 @@ import { haptic } from '../../utils/haptics';
 import { apiUrl } from '../../services/apiClient';
 import { createBackup } from '../../services/iCloudBackup';
 import { enqueueMutation } from '../../services/syncManager';
+import { getAgedCarePriorities } from '../../data/diseases';
 
 // ──────────────────────────────────────────────
 // AU Health Constants
 // ──────────────────────────────────────────────
 const CARE_LEVELS = ['standard', 'high', 'palliative', 'respite', 'dementia'];
 const GENDERS = ['Male', 'Female', 'Non-binary', 'Other', 'Prefer not to say'];
-const COMMON_CONDITIONS = [
-  'Type 2 Diabetes', 'Hypertension', 'Dementia', 'Atrial Fibrillation',
-  'Osteoarthritis', 'COPD', 'Heart Failure', 'Chronic Kidney Disease',
-  'Depression', 'Parkinsons Disease', 'Osteoporosis', 'Stroke History',
-];
+const COMMON_CONDITIONS = getAgedCarePriorities().map((d) => d.title);
 const COMMON_ALLERGIES = [
   'Penicillin', 'Sulfonamides', 'NSAIDS', 'Aspirin', 'Codeine',
   'Latex', 'Iodine', 'Eggs', 'Shellfish', 'Nuts',

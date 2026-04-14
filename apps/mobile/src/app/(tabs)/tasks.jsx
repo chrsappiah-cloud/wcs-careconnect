@@ -445,7 +445,6 @@ function TaskItem({ task, onToggle, resident, onResidentPress }) {
                     {priority.label}
                   </Text>
                 </View>
-              )}
               {task.due_at && !isCompleted && (
                 <View
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}

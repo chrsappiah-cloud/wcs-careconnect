@@ -107,6 +107,9 @@ export default function ChatThread({ conversation, onBack }) {
       setContent('');
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
+    onError: () => {
+      // Keep content in input so user can retry
+    },
   });
 
   const handleSend = () => {

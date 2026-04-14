@@ -388,24 +388,40 @@ export async function searchAMTMedications(query, count = 15) {
 // Convenience: Aged-care-specific helpers
 // ---------------------------------------------------------------------------
 
-/** Common aged care conditions — pre-built SNOMED codes */
-export const AGED_CARE_CONDITIONS = [
-  { code: '26929004', display: "Alzheimer's disease" },
-  { code: '15188001', display: 'Hearing loss' },
-  { code: '73211009', display: 'Diabetes mellitus' },
-  { code: '38341003', display: 'Hypertension' },
-  { code: '13645005', display: 'Chronic obstructive lung disease' },
-  { code: '84757009', display: 'Epilepsy' },
-  { code: '69896004', display: 'Rheumatoid arthritis' },
-  { code: '64859006', display: 'Osteoporosis' },
-  { code: '56717001', display: 'Tuberculosis' },
-  { code: '22298006', display: 'Myocardial infarction' },
-  { code: '230690007', display: 'Stroke' },
-  { code: '35489007', display: 'Depression' },
-  { code: '197480006', display: 'Anxiety disorder' },
-  { code: '386806002', display: 'Impaired cognition' },
-  { code: '129839007', display: 'At risk of falls' },
-];
+/**
+ * Comprehensive ICD-11 / SNOMED disease database + search utilities.
+ * Re-exported from src/data/diseases.js for backward compatibility.
+ */
+import {
+  DISEASES,
+  CATEGORIES as DISEASE_CATEGORIES,
+  ICD11_CHAPTERS,
+  searchDiseases,
+  getDiseasesByCategory,
+  getDiseasesByChapter,
+  getAgedCarePriorities,
+  lookupByCode,
+} from '../data/diseases';
+
+export {
+  DISEASES,
+  DISEASE_CATEGORIES,
+  ICD11_CHAPTERS,
+  searchDiseases,
+  getDiseasesByCategory,
+  getDiseasesByChapter,
+  getAgedCarePriorities,
+  lookupByCode,
+};
+
+/** Common aged care conditions — SNOMED codes (backward-compatible format) */
+export const AGED_CARE_CONDITIONS = getAgedCarePriorities().map((d) => ({
+  code: d.snomed,
+  display: d.title,
+  icd11: d.icd11,
+  category: d.category,
+  tags: d.tags,
+}));
 
 /** Common aged care medications — pre-built RxCUI codes */
 export const COMMON_MEDICATIONS = [

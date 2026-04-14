@@ -659,8 +659,8 @@ describe('Timeout handling', () => {
 
 // ─── Constants Validation ──────────────────────────────────
 describe('Constants deep validation', () => {
-  it('AGED_CARE_CONDITIONS has 15 items', () => {
-    expect(AGED_CARE_CONDITIONS).toHaveLength(15);
+  it('AGED_CARE_CONDITIONS has at least 15 items (ICD-11 disease database)', () => {
+    expect(AGED_CARE_CONDITIONS.length).toBeGreaterThanOrEqual(15);
   });
 
   it('each condition has a valid SNOMED code and display name', () => {

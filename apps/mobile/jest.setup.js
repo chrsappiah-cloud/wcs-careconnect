@@ -84,16 +84,52 @@ jest.mock('react-native-webview', () => {
 });
 
 // Mock @react-native-async-storage/async-storage
-jest.mock('@react-native-async-storage/async-storage', () => ({
-  getItem: jest.fn().mockResolvedValue(null),
-  setItem: jest.fn().mockResolvedValue(undefined),
-  removeItem: jest.fn().mockResolvedValue(undefined),
-  multiGet: jest.fn().mockResolvedValue([]),
-  multiSet: jest.fn().mockResolvedValue(undefined),
-  multiRemove: jest.fn().mockResolvedValue(undefined),
-  clear: jest.fn().mockResolvedValue(undefined),
-  getAllKeys: jest.fn().mockResolvedValue([]),
-}));
+// Uses a real in-memory store so setItem/getItem actually persist within a test.
+// mockResolvedValueOnce() overrides still work (queued values take priority over
+// the default implementation), so existing tests are unaffected.
+jest.mock('@react-native-async-storage/async-storage', () => {
+  const store = {};
+  const mock = {
+    getItem: jest.fn((key) => Promise.resolve(store[key] ?? null)),
+    setItem: jest.fn((key, value) => {
+      store[key] = value;
+      return Promise.resolve();
+    }),
+    removeItem: jest.fn((key) => {
+      delete store[key];
+      return Promise.resolve();
+    }),
+    clear: jest.fn(() => {
+      Object.keys(store).forEach((k) => delete store[k]);
+      return Promise.resolve();
+    }),
+    getAllKeys: jest.fn(() => Promise.resolve(Object.keys(store))),
+    multiGet: jest.fn((keys) =>
+      Promise.resolve(keys.map((k) => [k, store[k] ?? null]))
+    ),
+    multiSet: jest.fn((pairs) => {
+      pairs.forEach(([k, v]) => {
+        store[k] = v;
+      });
+      return Promise.resolve();
+    }),
+    multiRemove: jest.fn((keys) => {
+      keys.forEach((k) => delete store[k]);
+      return Promise.resolve();
+    }),
+    // Internal store accessor for test teardown
+    _store: store,
+  };
+  return mock;
+});
+// Reset AsyncStorage store between every test to prevent state leakage
+beforeEach(() => {
+  const AS = require('@react-native-async-storage/async-storage').default ??
+              require('@react-native-async-storage/async-storage');
+  if (AS && AS._store) {
+    Object.keys(AS._store).forEach((k) => delete AS._store[k]);
+  }
+});
 
 // Mock @gorhom/bottom-sheet
 jest.mock('@gorhom/bottom-sheet', () => {

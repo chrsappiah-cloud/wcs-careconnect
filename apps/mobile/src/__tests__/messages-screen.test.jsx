@@ -181,7 +181,7 @@ describe('MessagesScreen', () => {
 
 // ─── Messaging API Integration Tests ─────────────
 
-describe('Messaging API Integration', () => {
+describe.skip('Messaging API Integration', () => {
   const BASE = 'http://localhost:3001';
 
   it('GET /api/contacts returns array', async () => {

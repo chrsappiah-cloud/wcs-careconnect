@@ -35,6 +35,9 @@ import {
   searchFHIRPatients,
   lookupSNOMED,
   AGED_CARE_CONDITIONS,
+  DISEASE_CATEGORIES,
+  searchDiseases,
+  getDiseasesByCategory,
 } from '../../services/auMedApi';
 
 const TABS = [
@@ -48,8 +51,14 @@ export default function MedSearchScreen() {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('conditions');
   const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
-  // WHO ICD-11 condition search
+  // Local disease database search (instant, no network)
+  const localResults = activeTab === 'conditions' && search.trim().length >= 2
+    ? searchDiseases(search, { category: selectedCategory, limit: 30 })
+    : [];
+
+  // WHO ICD-11 condition search (network — augments local results)
   const { data: icdResults = [], isFetching: icdLoading } = useQuery({
     queryKey: ['icd11', search],
     queryFn: () => searchConditions(search),
@@ -243,11 +252,80 @@ export default function MedSearchScreen() {
         {/* ====== CONDITION RESULTS (ICD-11) ====== */}
         {activeTab === 'conditions' && search.trim().length >= 2 && (
           <View>
+            {/* Instant local database results */}
+            {localResults.length > 0 && (
+              <>
+                <Text
+                  style={[
+                    typography.caption,
+                    { color: colors.textTertiary, marginBottom: 8 },
+                  ]}
+                >
+                  LOCAL DATABASE — {localResults.length} found
+                </Text>
+                {localResults.map((item, i) => (
+                  <AnimatedPressable
+                    key={`local-${item.icd11 || i}`}
+                    onPress={() => {
+                      setDetailModal({
+                        type: 'icd11',
+                        title: item.title,
+                        code: item.icd11,
+                        snomed: item.snomed,
+                        category: item.category,
+                      });
+                    }}
+                    hapticType="selection"
+                  >
+                    <Card style={{ marginBottom: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                        <View
+                          style={{
+                            width: 42,
+                            height: 42,
+                            borderRadius: 14,
+                            overflow: 'hidden',
+                            marginRight: 12,
+                          }}
+                        >
+                          <LinearGradient
+                            colors={['#F0FFF4', '#C6F6D5']}
+                            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Stethoscope size={18} color={colors.success} />
+                          </LinearGradient>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[typography.subhead, { color: colors.text }]}>
+                            {item.title}
+                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6, flexWrap: 'wrap' }}>
+                            {item.icd11 && (
+                              <View style={{ backgroundColor: colors.primaryLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm }}>
+                                <Text style={[typography.caption, { color: colors.primary }]}>ICD-11: {item.icd11}</Text>
+                              </View>
+                            )}
+                            {item.snomed && (
+                              <View style={{ backgroundColor: colors.successLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm }}>
+                                <Text style={[typography.caption, { color: colors.success }]}>SNOMED: {item.snomed}</Text>
+                              </View>
+                            )}
+                            <Text style={[typography.caption, { color: colors.textMuted }]}>{item.category}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    </Card>
+                  </AnimatedPressable>
+                ))}
+              </>
+            )}
+
+            {/* WHO ICD-11 API results */}
             {icdResults.length > 0 && (
               <Text
                 style={[
                   typography.caption,
-                  { color: colors.textTertiary, marginBottom: 8 },
+                  { color: colors.textTertiary, marginBottom: 8, marginTop: localResults.length > 0 ? 16 : 0 },
                 ]}
               >
                 ICD-11 RESULTS — {icdResults.length} found
@@ -333,6 +411,7 @@ export default function MedSearchScreen() {
               </Card>
               </AnimatedPressable>
             ))}
+            {icdResults.length === 0 && localResults.length === 0 && !icdLoading && (
               <EmptyState
                 icon={<Stethoscope size={36} color={colors.textMuted} />}
                 title="No conditions found"
@@ -644,7 +723,7 @@ export default function MedSearchScreen() {
               ]}
             >
               {activeTab === 'conditions'
-                ? 'COMMON AGED CARE CONDITIONS'
+                ? (selectedCategory || 'BROWSE BY CATEGORY')
                 : activeTab === 'snomed'
                   ? 'TAP A CONDITION TO SEARCH SNOMED CT-AU'
                   : activeTab === 'amt'
@@ -652,12 +731,63 @@ export default function MedSearchScreen() {
                     : 'ENTER A PATIENT NAME TO SEARCH FHIR R4'}
             </Text>
 
+            {/* Category filter chips for conditions tab */}
+            {activeTab === 'conditions' && (
+              <View style={{ marginBottom: 16 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={{ flexDirection: 'row', gap: 8, paddingBottom: 4 }}>
+                    <AnimatedPressable
+                      onPress={() => setSelectedCategory(null)}
+                      hapticType="selection"
+                      style={{
+                        backgroundColor: !selectedCategory ? colors.primary : colors.surface,
+                        borderWidth: 1.5,
+                        borderColor: !selectedCategory ? colors.primary : colors.primaryBorder,
+                        borderRadius: radius.full,
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                      }}
+                    >
+                      <Text style={[typography.caption, { color: !selectedCategory ? '#fff' : colors.text, fontWeight: '600' }]}>
+                        All
+                      </Text>
+                    </AnimatedPressable>
+                    {DISEASE_CATEGORIES.map((cat) => (
+                      <AnimatedPressable
+                        key={cat}
+                        onPress={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                        hapticType="selection"
+                        style={{
+                          backgroundColor: selectedCategory === cat ? colors.primary : colors.surface,
+                          borderWidth: 1.5,
+                          borderColor: selectedCategory === cat ? colors.primary : colors.primaryBorder,
+                          borderRadius: radius.full,
+                          paddingHorizontal: 14,
+                          paddingVertical: 8,
+                        }}
+                      >
+                        <Text style={[typography.caption, { color: selectedCategory === cat ? '#fff' : colors.text, fontWeight: '600' }]}>
+                          {cat}
+                        </Text>
+                      </AnimatedPressable>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+            )}
+
             {activeTab !== 'fhir' && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {AGED_CARE_CONDITIONS.map((cond) => (
+                {(activeTab === 'conditions'
+                  ? (selectedCategory
+                      ? getDiseasesByCategory(selectedCategory)
+                      : AGED_CARE_CONDITIONS.map((c) => ({ title: c.display, snomed: c.code, icd11: c.icd11 }))
+                    )
+                  : AGED_CARE_CONDITIONS.map((c) => ({ title: c.display, snomed: c.code }))
+                ).map((cond, idx) => (
                   <AnimatedPressable
-                    key={cond.code}
-                    onPress={() => setSearch(cond.display)}
+                    key={cond.snomed || cond.icd11 || idx}
+                    onPress={() => setSearch(cond.title || cond.display)}
                     hapticType="selection"
                     style={{
                       backgroundColor: colors.surface,
@@ -670,8 +800,13 @@ export default function MedSearchScreen() {
                     }}
                   >
                     <Text style={[typography.footnote, { color: colors.text }]}>
-                      {cond.display}
+                      {cond.title || cond.display}
                     </Text>
+                    {cond.icd11 && (
+                      <Text style={[typography.caption, { color: colors.textTertiary, fontSize: 10, marginTop: 2 }]}>
+                        {cond.icd11}
+                      </Text>
+                    )}
                   </AnimatedPressable>
                 ))}
               </View>
