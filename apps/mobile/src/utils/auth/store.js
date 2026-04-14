@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 

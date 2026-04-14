@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import * as React from 'react';
 import { UploadClient } from '@uploadcare/upload-client'
 const client = new UploadClient({ publicKey: process.env.EXPO_PUBLIC_UPLOADCARE_PUBLIC_KEY });

@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import { Tabs as ExpoTabs } from 'expo-router/build/layouts/Tabs';
 import { merge } from 'lodash';
 import { forwardRef } from 'react';

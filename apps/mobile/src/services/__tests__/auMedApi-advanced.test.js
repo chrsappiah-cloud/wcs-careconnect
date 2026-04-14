@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 /**
  * Advanced auMedApi tests — input validation, edge cases, error handling,
  * timeout behaviour, and data transformation for all 14 API functions.

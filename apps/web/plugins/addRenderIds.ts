@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import * as babel from '@babel/core';
 import type { PluginOption } from 'vite';
 import type { NodePath, PluginObj } from '@babel/core';

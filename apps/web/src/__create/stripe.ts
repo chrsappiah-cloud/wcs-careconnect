@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import lodash from 'lodash';
 const { partial } = lodash;
 import regularStripe from 'npm:stripe';

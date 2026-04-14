@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 'use strict';
 /**
  * s3Service.js — Amazon S3 presigned URL service

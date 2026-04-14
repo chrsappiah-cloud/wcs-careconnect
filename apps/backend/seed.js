@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 /**
  * Seeds the Supabase PostgreSQL database with fresh timestamps.
  * Run: node seed.js

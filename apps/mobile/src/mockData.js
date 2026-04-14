@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 // Mock data for development — replace fetch calls with these when no backend is available.
 
 export const mockResidents = [

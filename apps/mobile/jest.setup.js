@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 // Jest setup — mocks for native modules and third-party libs
 
 // Silence RN Animated warnings in tests

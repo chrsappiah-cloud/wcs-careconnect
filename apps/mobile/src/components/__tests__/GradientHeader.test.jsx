@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import React from 'react';
 import { Text, View } from 'react-native';
 import { render } from '@testing-library/react-native';

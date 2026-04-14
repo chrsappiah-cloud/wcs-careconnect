@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 /**
  * Button → API Integration Tests
  * Verifies all interactive elements connect properly to backend endpoints.

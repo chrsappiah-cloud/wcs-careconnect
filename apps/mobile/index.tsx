@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import ExceptionsManager from 'react-native/Libraries/Core/ExceptionsManager';
 
 if (__DEV__) {

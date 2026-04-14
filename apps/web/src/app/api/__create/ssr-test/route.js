@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import { getToken } from '@auth/core/jwt';
 import React from 'react';
 import path from 'node:path';

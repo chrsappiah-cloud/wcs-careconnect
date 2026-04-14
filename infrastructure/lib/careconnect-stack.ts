@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as ec2       from 'aws-cdk-lib/aws-ec2';

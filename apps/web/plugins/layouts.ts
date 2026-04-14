@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 // vite-react-hierarchical-layouts.ts
 import fs from 'node:fs';
 import path from 'node:path';

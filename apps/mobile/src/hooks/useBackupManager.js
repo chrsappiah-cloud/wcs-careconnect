@@ -1,3 +1,4 @@
+// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { createBackup, getBackupMeta } from '../services/iCloudBackup';
