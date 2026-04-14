@@ -13,6 +13,8 @@ import {
   registerForPushNotifications,
   addNotificationListeners,
 } from '../services/pushNotifications';
+import { initErrorLogger } from '../services/errorLogger';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -37,6 +39,7 @@ export default function RootLayout() {
   const { initiate, isReady } = useAuth();
 
   useEffect(() => {
+    initErrorLogger();
     initiate();
     startSyncManager();
 
@@ -74,16 +77,18 @@ export default function RootLayout() {
   }
 
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{ persister: asyncStoragePersister, maxAge: 1000 * 60 * 60 * 24 }}
-    >
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-        <AuthModal />
-      </GestureHandlerRootView>
-    </PersistQueryClientProvider>
+    <ErrorBoundary>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{ persister: asyncStoragePersister, maxAge: 1000 * 60 * 60 * 24 }}
+      >
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+          </Stack>
+          <AuthModal />
+        </GestureHandlerRootView>
+      </PersistQueryClientProvider>
+    </ErrorBoundary>
   );
 }

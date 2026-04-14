@@ -621,7 +621,7 @@ function SettingsItem({
   return (
     <AnimatedPressable
       onPress={handlePress}
-      disabled={type === 'switch' && !onPress}
+      disabled={type !== 'switch' && !onPress}
       hapticType={null}
       style={{
         flexDirection: 'row',
