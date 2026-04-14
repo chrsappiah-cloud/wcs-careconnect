@@ -14,6 +14,11 @@ const AVATAR_PALETTES = [
 ];
 
 export default function Avatar({ name, size = 56, uri, showRing, ringColor }) {
+  const safeUri =
+    typeof uri === 'string' && uri.trim() && uri !== 'undefined' && uri !== 'null'
+      ? uri
+      : null;
+
   const initials = name
     ? name
         .split(' ')
@@ -23,7 +28,7 @@ export default function Avatar({ name, size = 56, uri, showRing, ringColor }) {
         .toUpperCase()
     : '?';
 
-  if (uri) {
+  if (safeUri) {
     try {
       const { Image } = require('expo-image');
       return (
@@ -37,7 +42,7 @@ export default function Avatar({ name, size = 56, uri, showRing, ringColor }) {
           justifyContent: 'center',
         } : undefined}>
           <Image
-            source={{ uri }}
+            source={{ uri: safeUri }}
             style={{
               width: size,
               height: size,
