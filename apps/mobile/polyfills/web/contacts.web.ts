@@ -1,4 +1,3 @@
-// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import type { ExistingContact, ContactQuery } from 'expo-contacts';
 import { Fields, SortTypes } from 'expo-contacts/src/Contacts';
 import Alert from './alerts.web';

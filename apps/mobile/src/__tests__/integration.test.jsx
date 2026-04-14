@@ -1,4 +1,3 @@
-// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 /**
  * Integration tests verifying all routes, screens, and API connections
  * are properly wired together.

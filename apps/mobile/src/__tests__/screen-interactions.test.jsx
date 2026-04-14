@@ -1,4 +1,3 @@
-// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 /**
  * Advanced screen interaction tests — user flows, filter behaviour,
  * button actions, modal workflows, data rendering, and edge cases.

@@ -1,4 +1,3 @@
-// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import React, { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { SharedErrorBoundary, Button } from './SharedErrorBoundary';
 import * as Updates from 'expo-updates';

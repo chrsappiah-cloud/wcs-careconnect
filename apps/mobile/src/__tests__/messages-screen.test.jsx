@@ -1,4 +1,3 @@
-// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';

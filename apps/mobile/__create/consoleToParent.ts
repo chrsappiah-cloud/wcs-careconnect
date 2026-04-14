@@ -1,4 +1,3 @@
-// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 /**
  * Patch console so each call is echoed to the parent window.
  * Must be imported first in the app entry point.

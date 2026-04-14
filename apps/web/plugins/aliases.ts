@@ -1,4 +1,3 @@
-// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import path from 'node:path';
 import type { Plugin } from 'vite';
 import { existsSync } from 'node:fs';

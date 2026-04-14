@@ -1,4 +1,3 @@
-// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import React, { useMemo } from 'react';
 import RNScrollView from 'react-native-web/dist/exports/ScrollView';
 

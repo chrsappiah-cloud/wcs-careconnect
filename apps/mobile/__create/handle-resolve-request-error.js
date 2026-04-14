@@ -1,4 +1,3 @@
-// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');

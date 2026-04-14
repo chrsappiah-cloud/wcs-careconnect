@@ -1,4 +1,3 @@
-// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import WebMapView, * as WebMaps from '@teovilla/react-native-web-maps';
 import React from 'react';
 

@@ -1,4 +1,3 @@
-// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 const VALUE_BYTES_LIMIT = 2048;
 
 const KEYCHAIN_CONSTANTS = {

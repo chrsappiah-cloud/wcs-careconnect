@@ -1,4 +1,3 @@
-// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 import { AsyncLocalStorage } from 'node:async_hooks';
 import nodeConsole from 'node:console';
 import { skipCSRFCheck } from '@auth/core';

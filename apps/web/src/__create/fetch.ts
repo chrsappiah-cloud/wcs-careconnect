@@ -1,4 +1,3 @@
-// Copyright (c) 2026 World Class Scholars, led by Dr Christopher Appiah-Thompson. All rights reserved.
 const originalFetch = fetch;
 const isBackend = () => typeof window === 'undefined';
 
