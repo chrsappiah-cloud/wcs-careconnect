@@ -3,6 +3,7 @@ const cors = require('cors');
 const http = require('http');
 const { WebSocketServer, WebSocket } = require('ws');
 const db = require('./db');
+const { generatePresignedUploadUrl, generatePresignedDownloadUrl, residentPhotoKey } = require('./services/s3Service');
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -126,6 +127,48 @@ app.use(cors());
 app.use(express.json());
 
 // ──────────────────────────────────────────────
+// HEALTH CHECK — ALB / ECS target group probe
+// ──────────────────────────────────────────────
+app.get('/health', async (_req, res) => {
+  try {
+    await db.query('SELECT 1');
+    res.json({ status: 'ok', db: 'connected', ts: new Date().toISOString() });
+  } catch {
+    res.status(503).json({ status: 'error', db: 'unreachable', ts: new Date().toISOString() });
+  }
+});
+
+// ──────────────────────────────────────────────
+// S3 PRESIGNED URLS — resident photo upload/download
+// ──────────────────────────────────────────────
+
+/** POST /api/residents/:id/photo-upload-url
+ *  Returns a 5-minute presigned PUT URL for direct mobile→S3 upload.
+ *  Body: { filename, contentType } */
+app.post('/api/residents/:id/photo-upload-url', async (req, res) => {
+  try {
+    const { filename = 'photo.jpg', contentType = 'image/jpeg' } = req.body;
+    const key = residentPhotoKey(req.params.id, filename);
+    const uploadUrl = await generatePresignedUploadUrl(key, contentType);
+    res.json({ uploadUrl, key });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** GET /api/residents/:id/photo-url?key=residents/42/photo.jpg
+ *  Returns a 1-hour presigned GET URL to serve a resident photo. */
+app.get('/api/residents/:id/photo-url', async (req, res) => {
+  try {
+    const key = req.query.key || residentPhotoKey(req.params.id);
+    const downloadUrl = await generatePresignedDownloadUrl(key);
+    res.json({ downloadUrl, key });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ──────────────────────────────────────────────
 // RESIDENTS
 // ──────────────────────────────────────────────
 app.get('/api/residents', async (_req, res) => {
@@ -149,6 +192,7 @@ app.get('/api/residents/:id', async (req, res) => {
 
 /** POST /api/residents — Create a new resident */
 app.post('/api/residents', async (req, res) => {
+  console.log('POST /api/residents HIT — body keys:', Object.keys(req.body || {}));
   try {
     const {
       name, room, status, photo_url, age, conditions, latest_glucose,
@@ -896,16 +940,20 @@ app.post('/api/backup/restore', async (req, res) => {
 // START
 // ──────────────────────────────────────────────
 server.listen(PORT, () => {
+  const dbLabel = process.env.NODE_ENV === 'production' ? 'AWS RDS PostgreSQL (ap-southeast-2)' : 'Supabase PostgreSQL';
   console.log(`\n  🏥 CareConnect API Server running at http://localhost:${PORT}`);
   console.log(`  🔌 WebSocket server running at ws://localhost:${PORT}/ws`);
-  console.log(`  🐘 Connected to Supabase PostgreSQL`);
+  console.log(`  🐘 Connected to ${dbLabel}`);
   console.log(`  📋 Endpoints:`);
+  console.log(`     GET    /health`);
   console.log(`     GET    /api/residents`);
   console.log(`     GET    /api/residents/:id`);
   console.log(`     POST   /api/residents`);
   console.log(`     PATCH  /api/residents/:id`);
   console.log(`     DELETE /api/residents/:id`);
   console.log(`     GET    /api/residents/:id/health-summary`);
+  console.log(`     POST   /api/residents/:id/photo-upload-url`);
+  console.log(`     GET    /api/residents/:id/photo-url`);
   console.log(`     GET    /api/alerts?status=open`);
   console.log(`     PATCH  /api/alerts/:id`);
   console.log(`     GET    /api/tasks?status=all`);

@@ -1,0 +1,22 @@
+{
+  "name": "careconnect-infrastructure",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build":   "tsc",
+    "watch":   "tsc -w",
+    "cdk":     "cdk",
+    "deploy":  "cdk deploy --require-approval never",
+    "diff":    "cdk diff",
+    "synth":   "cdk synth"
+  },
+  "dependencies": {
+    "aws-cdk-lib":       "^2.140.0",
+    "constructs":        "^10.3.0"
+  },
+  "devDependencies": {
+    "@types/node":       "^20.0.0",
+    "aws-cdk":           "^2.140.0",
+    "typescript":        "~5.4.0"
+  }
+}

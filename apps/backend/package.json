@@ -4,11 +4,14 @@
   "private": true,
   "description": "CareConnect API server (Express + Supabase PostgreSQL)",
   "scripts": {
-    "start": "node -r dotenv/config server.js",
+    "start": "node server.js",
     "migrate": "node migrate.js",
     "seed": "node seed.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/s3-request-presigner": "^3.600.0",
+    "aws-jwt-verify": "^4.0.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log*
+.env
+.env.*
+!.env.example
+.DS_Store
+*.test.js
+__tests__/
+coverage/
+.nyc_output
+.git
+.gitignore
+README.md
+seed.js
+migrate.js
