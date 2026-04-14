@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "backend:start",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "--prefix",
+        "${workspaceFolder}/apps/backend",
+        "start"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "mobile:web",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "--prefix",
+        "${workspaceFolder}/apps/mobile",
+        "run",
+        "web"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "mobile:ios",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "--prefix",
+        "${workspaceFolder}/apps/mobile",
+        "run",
+        "ios"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

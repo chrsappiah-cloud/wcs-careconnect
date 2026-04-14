@@ -1,0 +1,38 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "CareConnect Backend (Node)",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/backend",
+      "program": "${workspaceFolder}/apps/backend/server.js",
+      "runtimeArgs": [
+        "-r",
+        "dotenv/config"
+      ],
+      "envFile": "${workspaceFolder}/apps/backend/.env",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "CareConnect Web (Expo + Chrome)",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:8081",
+      "webRoot": "${workspaceFolder}/apps/mobile",
+      "preLaunchTask": "mobile:web"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "CareConnect Full Stack Debug",
+      "configurations": [
+        "CareConnect Backend (Node)",
+        "CareConnect Web (Expo + Chrome)"
+      ]
+    }
+  ]
+}
